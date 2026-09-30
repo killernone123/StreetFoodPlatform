@@ -1,0 +1,171 @@
+const dotenv = require("dotenv");
+dotenv.config();
+
+const express = require("express");
+const cors = require("cors");
+const http = require("http");
+const { Server } = require("socket.io");
+
+const connectDB = require("./config/db");
+
+const categoryRoutes = require("./routes/categoryRoutes");
+const foodRoutes = require("./routes/foodRoutes");
+const orderRoutes = require("./routes/orderRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const userRoutes = require("./routes/userRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
+
+
+const app = express();
+
+
+// =====================================
+// HTTP SERVER
+// =====================================
+
+const server = http.createServer(app);
+
+
+// =====================================
+// SOCKET.IO SERVER
+// =====================================
+
+const io = new Server(server, {
+    cors: {
+        origin: "http://localhost:5173",
+        methods: ["GET", "POST", "PATCH"]
+    }
+});
+app.set("io",io);
+
+
+// =====================================
+// MIDDLEWARE
+// =====================================
+
+app.use(cors());
+
+app.use(express.json());
+
+
+// =====================================
+// API ROUTES
+// =====================================
+
+app.use("/api/users", userRoutes);
+
+app.use("/api/categories", categoryRoutes);
+
+app.use("/api/foods", foodRoutes);
+
+app.use("/api/orders", orderRoutes);
+
+app.use("/api/admin", adminRoutes);
+app.use("/api/payments",paymentRoutes);
+
+
+// =====================================
+// DATABASE
+// =====================================
+
+connectDB();
+
+
+// =====================================
+// SOCKET CONNECTION
+// =====================================
+
+io.on("connection", (socket) => {
+
+    console.log(
+        `🟢 Socket connected: ${socket.id}`
+    );
+
+    // =================================
+    // ADMIN ROOM
+    // =================================
+
+    socket.on("joinAdminRoom", () => {
+
+        socket.join("admin_room");
+
+        console.log(
+            `👨‍💼 Admin joined admin_room: ${socket.id}`
+        );
+
+        console.log(
+            "👥 Admin room clients:",
+            io.sockets.adapter.rooms.get("admin_room")?.size || 0
+        );
+
+    });
+
+
+    // =================================
+    // CUSTOMER ORDER ROOM
+    // =================================
+
+    socket.on("joinOrderRoom", (orderId) => {
+
+        if (!orderId) {
+            return;
+        }
+
+        const roomName = `order_${orderId}`;
+
+        socket.join(roomName);
+
+        console.log(
+            `📦 Customer joined: ${roomName}`
+        );
+
+    });
+
+
+    // =================================
+    // DISCONNECT
+    // =================================
+
+    socket.on("disconnect", () => {
+
+        console.log(
+            `🔴 Socket disconnected: ${socket.id}`
+        );
+
+    });
+
+});
+
+// =====================================
+// HOME API
+// =====================================
+
+app.get("/", (req, res) => {
+
+    res.json({
+        message:
+            "Street Food API is Running"
+    });
+
+});
+
+
+// =====================================
+// PORT
+// =====================================
+
+const PORT =
+    process.env.PORT || 5000;
+
+
+// =====================================
+// START SERVER
+// =====================================
+
+server.listen(PORT, () => {
+
+    console.log(
+        `Server running on port ${PORT}`
+    );
+
+});

@@ -1,0 +1,1084 @@
+/* =========================================================
+   NEW ORDER TOAST
+========================================================= */
+
+.new-order-toast {
+    position: fixed;
+    top: 25px;
+    right: 25px;
+
+    width: 360px;
+    max-width: calc(100vw - 30px);
+    min-height: 85px;
+
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    padding: 16px 18px;
+
+    background: #ffffff;
+
+    border: 1px solid #eeeeee;
+    border-radius: 18px;
+
+    box-shadow:
+        0 15px 45px rgba(0, 0, 0, 0.18);
+
+    z-index: 999999;
+
+    cursor: pointer;
+
+    animation: toastSlideIn 0.45s ease forwards;
+
+    box-sizing: border-box;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.new-order-toast:hover {
+    transform: translateY(-3px);
+
+    box-shadow:
+        0 20px 55px rgba(0, 0, 0, 0.22);
+}
+
+
+/* =========================================================
+   TOAST ICON
+========================================================= */
+
+.toast-icon {
+    width: 48px;
+    height: 48px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #fff3e0;
+
+    border-radius: 14px;
+
+    font-size: 24px;
+}
+
+
+/* =========================================================
+   TOAST CONTENT
+========================================================= */
+
+.toast-content {
+    flex: 1;
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 3px;
+}
+
+.toast-content strong {
+    color: #111827;
+
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.toast-content span {
+    color: #374151;
+
+    font-size: 13px;
+    font-weight: 700;
+
+    word-break: break-word;
+}
+
+.toast-content small {
+    color: #6b7280;
+
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   TOAST CLOSE BUTTON
+========================================================= */
+
+.toast-close {
+    width: 28px;
+    height: 28px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+
+    border: none;
+
+    background: #f3f4f6;
+
+    color: #6b7280;
+
+    border-radius: 50%;
+
+    font-size: 13px;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+}
+
+.toast-close:hover {
+    background: #fee2e2;
+
+    color: #ef4444;
+}
+
+
+/* =========================================================
+   TOAST ANIMATION
+========================================================= */
+
+@keyframes toastSlideIn {
+    from {
+        opacity: 0;
+
+        transform:
+            translateX(120px)
+            scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+
+        transform:
+            translateX(0)
+            scale(1);
+    }
+}
+
+
+/* =====================================================
+   VIEW FULL DETAILS BUTTON
+===================================================== */
+
+.view-order-btn {
+    width: 100%;
+    margin-top: 12px;
+
+    padding: 12px 16px;
+
+    border: none;
+    border-radius: 10px;
+
+    background: #111827;
+    color: #ffffff;
+
+    font-size: 13px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.view-order-btn:hover {
+    background: #1f2937;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 6px 18px rgba(0, 0, 0, 0.15);
+}
+
+
+/* =====================================================
+   MODAL OVERLAY
+===================================================== */
+
+.order-modal-overlay {
+    position: fixed !important;
+
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+
+    width: 100vw !important;
+    height: 100vh !important;
+
+    padding: 20px !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+    justify-content: center !important;
+
+    box-sizing: border-box !important;
+
+    background: rgba(0, 0, 0, 0.65) !important;
+
+    backdrop-filter: blur(6px);
+
+    z-index: 999999 !important;
+
+    overflow-y: auto;
+
+    animation: modalOverlayIn 0.2s ease;
+}
+
+
+/* =====================================================
+   MODAL MAIN BOX
+===================================================== */
+
+.order-modal {
+    position: relative !important;
+
+    width: 700px !important;
+
+    max-width: 100% !important;
+
+    max-height: calc(100vh - 40px) !important;
+
+    margin: auto !important;
+
+    padding: 0 !important;
+
+    display: block !important;
+
+    box-sizing: border-box !important;
+
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+
+    background: #ffffff !important;
+
+    color: #111827 !important;
+
+    border-radius: 20px !important;
+
+    box-shadow:
+        0 30px 90px rgba(0, 0, 0, 0.35) !important;
+
+    opacity: 1 !important;
+    visibility: visible !important;
+
+    z-index: 1000000 !important;
+
+    animation: modalBoxIn 0.25s ease;
+}
+
+
+/* =====================================================
+   MODAL HEADER
+===================================================== */
+
+.order-modal-header {
+    width: 100% !important;
+
+    min-height: 90px;
+
+    padding: 22px 24px !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+    justify-content: space-between !important;
+
+    gap: 20px;
+
+    box-sizing: border-box !important;
+
+    background: #ffffff;
+
+    border-bottom: 1px solid #eeeeee;
+}
+
+
+/* LEFT HEADER CONTENT */
+
+.order-modal-header > div {
+    flex: 1;
+
+    min-width: 0;
+
+    display: flex !important;
+
+    flex-direction: column !important;
+
+    gap: 5px !important;
+}
+
+
+/* ORDER DETAILS LABEL */
+
+.order-modal-header span {
+    display: block !important;
+
+    margin: 0 !important;
+
+    color: #9ca3af !important;
+
+    font-size: 11px !important;
+
+    line-height: 1.2 !important;
+
+    font-weight: 800 !important;
+
+    letter-spacing: 1px !important;
+}
+
+
+/* ORDER NUMBER */
+
+.order-modal-header h2 {
+    display: block !important;
+
+    margin: 0 !important;
+
+    padding: 0 !important;
+
+    color: #111827 !important;
+
+    font-size: 21px !important;
+
+    line-height: 1.3 !important;
+
+    font-weight: 800 !important;
+
+    word-break: break-word;
+}
+
+
+/* =====================================================
+   CLOSE BUTTON
+===================================================== */
+
+.modal-close-btn {
+    flex-shrink: 0 !important;
+
+    width: 38px !important;
+    height: 38px !important;
+
+    padding: 0 !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+    justify-content: center !important;
+
+    border: none !important;
+
+    border-radius: 50% !important;
+
+    background: #f3f4f6 !important;
+
+    color: #4b5563 !important;
+
+    font-size: 17px !important;
+
+    line-height: 1 !important;
+
+    cursor: pointer !important;
+
+    transition: all 0.2s ease;
+}
+
+.modal-close-btn:hover {
+    background: #fee2e2 !important;
+
+    color: #dc2626 !important;
+
+    transform: rotate(90deg);
+}
+
+
+/* =====================================================
+   STATUS ROW
+===================================================== */
+
+.modal-status-row {
+    width: 100% !important;
+
+    min-height: 55px;
+
+    padding: 12px 24px !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+
+    justify-content: space-between !important;
+
+    gap: 15px;
+
+    box-sizing: border-box !important;
+
+    background: #f9fafb !important;
+
+    color: #6b7280 !important;
+
+    font-size: 12px !important;
+
+    line-height: 1.4 !important;
+}
+
+
+/* =====================================================
+   MODAL SECTIONS
+===================================================== */
+
+.modal-section {
+    width: 100% !important;
+
+    padding: 22px 24px !important;
+
+    box-sizing: border-box !important;
+
+    background: #ffffff !important;
+
+    border-bottom: 1px solid #eeeeee !important;
+}
+
+
+.modal-section h3 {
+    display: block !important;
+
+    margin: 0 0 18px 0 !important;
+
+    padding: 0 !important;
+
+    color: #111827 !important;
+
+    font-size: 16px !important;
+
+    line-height: 1.3 !important;
+
+    font-weight: 800 !important;
+}
+
+
+/* =====================================================
+   CUSTOMER INFORMATION
+===================================================== */
+
+.modal-info-grid {
+    width: 100% !important;
+
+    display: grid !important;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+
+    gap: 18px !important;
+
+    box-sizing: border-box !important;
+}
+
+
+.modal-info-grid > div {
+    min-width: 0 !important;
+
+    display: flex !important;
+
+    flex-direction: column !important;
+
+    gap: 6px !important;
+
+    padding: 12px !important;
+
+    box-sizing: border-box !important;
+
+    background: #fafafa !important;
+
+    border: 1px solid #eeeeee !important;
+
+    border-radius: 10px !important;
+}
+
+
+/* LABEL */
+
+.modal-info-grid span,
+.payment-info span {
+    display: block !important;
+
+    margin: 0 !important;
+
+    color: #9ca3af !important;
+
+    font-size: 10px !important;
+
+    line-height: 1.3 !important;
+
+    font-weight: 800 !important;
+
+    text-transform: uppercase !important;
+
+    letter-spacing: 0.5px !important;
+}
+
+
+/* VALUE */
+
+.modal-info-grid strong,
+.payment-info strong {
+    display: block !important;
+
+    margin: 0 !important;
+
+    color: #374151 !important;
+
+    font-size: 13px !important;
+
+    line-height: 1.5 !important;
+
+    font-weight: 700 !important;
+
+    word-break: break-word !important;
+}
+
+
+/* FULL WIDTH */
+
+.modal-info-grid .full-width {
+    grid-column: 1 / -1 !important;
+}
+
+
+/* =====================================================
+   ORDER ITEMS
+===================================================== */
+
+.modal-items {
+    width: 100% !important;
+
+    display: flex !important;
+
+    flex-direction: column !important;
+
+    gap: 0 !important;
+}
+
+
+.modal-item {
+    width: 100% !important;
+
+    padding: 15px 0 !important;
+
+    box-sizing: border-box !important;
+
+    border-bottom: 1px solid #eeeeee !important;
+}
+
+
+.modal-item:first-child {
+    padding-top: 0 !important;
+}
+
+
+.modal-item:last-child {
+    padding-bottom: 0 !important;
+
+    border-bottom: none !important;
+}
+
+
+.modal-item-main {
+    width: 100% !important;
+
+    display: flex !important;
+
+    align-items: flex-start !important;
+
+    justify-content: space-between !important;
+
+    gap: 20px !important;
+}
+
+
+.modal-item-main > div {
+    flex: 1 !important;
+
+    min-width: 0 !important;
+
+    display: flex !important;
+
+    flex-direction: column !important;
+
+    gap: 6px !important;
+}
+
+
+/* FOOD NAME */
+
+.modal-item-main > div > strong {
+    display: block !important;
+
+    color: #111827 !important;
+
+    font-size: 14px !important;
+
+    line-height: 1.4 !important;
+
+    font-weight: 800 !important;
+}
+
+
+/* QUANTITY */
+
+.modal-item-main span {
+    display: block !important;
+
+    color: #6b7280 !important;
+
+    font-size: 12px !important;
+
+    line-height: 1.4 !important;
+}
+
+
+/* ITEM PRICE */
+
+.modal-item-main > strong {
+    flex-shrink: 0 !important;
+
+    display: block !important;
+
+    color: #111827 !important;
+
+    font-size: 14px !important;
+
+    line-height: 1.4 !important;
+
+    font-weight: 800 !important;
+
+    white-space: nowrap !important;
+}
+
+
+/* =====================================================
+   CUSTOMIZATION / ADDON TAGS
+===================================================== */
+
+.modal-tags {
+    width: 100% !important;
+
+    display: flex !important;
+
+    flex-wrap: wrap !important;
+
+    align-items: center !important;
+
+    gap: 6px !important;
+
+    margin-top: 2px !important;
+}
+
+
+.modal-tags small {
+    display: inline-flex !important;
+
+    align-items: center !important;
+
+    padding: 5px 8px !important;
+
+    background: #f3f4f6 !important;
+
+    color: #4b5563 !important;
+
+    border-radius: 7px !important;
+
+    font-size: 10px !important;
+
+    line-height: 1.3 !important;
+
+    font-weight: 600 !important;
+}
+
+
+/* =====================================================
+   PAYMENT
+===================================================== */
+
+.payment-info {
+    width: 100% !important;
+
+    display: grid !important;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+
+    gap: 15px !important;
+}
+
+
+.payment-info > div {
+    min-width: 0 !important;
+
+    padding: 14px !important;
+
+    display: flex !important;
+
+    flex-direction: column !important;
+
+    gap: 6px !important;
+
+    box-sizing: border-box !important;
+
+    background: #fafafa !important;
+
+    border: 1px solid #eeeeee !important;
+
+    border-radius: 10px !important;
+}
+
+
+/* =====================================================
+   BILL
+===================================================== */
+
+.modal-bill {
+    width: 100% !important;
+
+    padding: 20px 24px !important;
+
+    box-sizing: border-box !important;
+
+    background: #f9fafb !important;
+}
+
+
+.modal-bill > div {
+    width: 100% !important;
+
+    min-height: 30px;
+
+    display: flex !important;
+
+    align-items: center !important;
+
+    justify-content: space-between !important;
+
+    gap: 20px;
+
+    padding: 5px 0 !important;
+
+    box-sizing: border-box !important;
+
+    color: #6b7280 !important;
+
+    font-size: 13px !important;
+
+    line-height: 1.4 !important;
+}
+
+
+.modal-bill > div strong {
+    color: #374151 !important;
+
+    font-weight: 700 !important;
+
+    white-space: nowrap;
+}
+
+
+.modal-grand-total {
+    margin-top: 10px !important;
+
+    padding-top: 14px !important;
+
+    border-top: 1px solid #d1d5db !important;
+
+    color: #111827 !important;
+
+    font-size: 16px !important;
+
+    font-weight: 800 !important;
+}
+
+
+.modal-grand-total strong {
+    color: #111827 !important;
+
+    font-size: 18px !important;
+
+    font-weight: 900 !important;
+}
+
+
+/* =====================================================
+   STATUS UPDATE
+===================================================== */
+
+.modal-status-control {
+    width: 100% !important;
+
+    padding: 20px 24px 24px !important;
+
+    box-sizing: border-box !important;
+
+    background: #ffffff !important;
+}
+
+
+.modal-status-control label {
+    display: block !important;
+
+    margin: 0 0 8px 0 !important;
+
+    color: #374151 !important;
+
+    font-size: 12px !important;
+
+    line-height: 1.4 !important;
+
+    font-weight: 800 !important;
+}
+
+
+.modal-status-control select {
+    width: 100% !important;
+
+    height: 44px !important;
+
+    padding: 0 13px !important;
+
+    box-sizing: border-box !important;
+
+    border: 1px solid #d1d5db !important;
+
+    border-radius: 10px !important;
+
+    outline: none !important;
+
+    background: #ffffff !important;
+
+    color: #374151 !important;
+
+    font-size: 13px !important;
+
+    font-weight: 600 !important;
+
+    cursor: pointer !important;
+
+    transition: all 0.2s ease;
+}
+
+
+.modal-status-control select:hover {
+    border-color: #9ca3af !important;
+}
+
+
+.modal-status-control select:focus {
+    border-color: #111827 !important;
+
+    box-shadow:
+        0 0 0 3px rgba(17, 24, 39, 0.08) !important;
+}
+
+
+/* =====================================================
+   MODAL SCROLLBAR
+===================================================== */
+
+.order-modal::-webkit-scrollbar {
+    width: 7px;
+}
+
+.order-modal::-webkit-scrollbar-track {
+    background: #f3f4f6;
+}
+
+.order-modal::-webkit-scrollbar-thumb {
+    background: #c7cbd1;
+
+    border-radius: 10px;
+}
+
+.order-modal::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+
+
+/* =====================================================
+   ANIMATIONS
+===================================================== */
+
+@keyframes modalOverlayIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+
+@keyframes modalBoxIn {
+    from {
+        opacity: 0;
+
+        transform:
+            translateY(15px)
+            scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+
+        transform:
+            translateY(0)
+            scale(1);
+    }
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 700px) {
+
+    .order-modal-overlay {
+        padding: 10px !important;
+
+        align-items: flex-start !important;
+    }
+
+
+    .order-modal {
+        width: 100% !important;
+
+        max-width: 100% !important;
+
+        max-height: calc(100vh - 20px) !important;
+
+        margin-top: 10px !important;
+
+        border-radius: 16px !important;
+    }
+
+
+    .order-modal-header {
+        padding: 18px !important;
+    }
+
+
+    .order-modal-header h2 {
+        font-size: 17px !important;
+    }
+
+
+    .modal-status-row {
+        padding: 12px 18px !important;
+
+        flex-direction: column !important;
+
+        align-items: flex-start !important;
+
+        gap: 8px !important;
+    }
+
+
+    .modal-section {
+        padding: 18px !important;
+    }
+
+
+    .modal-info-grid {
+        grid-template-columns: 1fr !important;
+
+        gap: 12px !important;
+    }
+
+
+    .modal-info-grid .full-width {
+        grid-column: auto !important;
+    }
+
+
+    .payment-info {
+        grid-template-columns: 1fr !important;
+
+        gap: 10px !important;
+    }
+
+
+    .modal-bill {
+        padding: 18px !important;
+    }
+
+
+    .modal-status-control {
+        padding: 18px !important;
+    }
+
+}
+
+
+/* =====================================================
+   VERY SMALL MOBILE
+===================================================== */
+
+@media (max-width: 400px) {
+
+    .order-modal-overlay {
+        padding: 5px !important;
+    }
+
+
+    .order-modal {
+        max-height: calc(100vh - 10px) !important;
+
+        border-radius: 14px !important;
+    }
+
+
+    .order-modal-header {
+        padding: 15px !important;
+    }
+
+
+    .order-modal-header h2 {
+        font-size: 15px !important;
+    }
+
+
+    .modal-section {
+        padding: 15px !important;
+    }
+
+
+    .modal-item-main {
+        gap: 10px !important;
+    }
+
+
+    .modal-item-main > strong {
+        font-size: 13px !important;
+    }
+
+
+    .modal-bill {
+        padding: 15px !important;
+    }
+
+
+    .modal-status-control {
+        padding: 15px !important;
+    }
+
+}
