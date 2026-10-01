@@ -24,20 +24,12 @@ const app = express();
 
 const allowedOrigins = [
     "http://localhost:5173",
-    "https://street-food-platform.vercel.app",
-    "https://street-food-platform-z38i-dg80ivxny-street1.vercel.app"
+     "https://street-food-platform-z38i.vercel.app"
 ];
-
-
-// =====================================
-// CORS CONFIGURATION
-// =====================================
 
 const corsOptions = {
     origin: (origin, callback) => {
 
-        // Allow requests without an origin
-        // Example: Postman / server-to-server
         if (!origin) {
             return callback(null, true);
         }
@@ -46,14 +38,13 @@ const corsOptions = {
             return callback(null, true);
         }
 
-        return callback(
-            new Error("Not allowed by CORS")
-        );
+        console.log("Blocked CORS Origin:", origin);
+
+        return callback(new Error("Not allowed by CORS"));
     },
 
     credentials: true
 };
-
 
 // =====================================
 // HTTP SERVER
