@@ -24,8 +24,10 @@ const app = express();
 
 const allowedOrigins = [
     "http://localhost:5173",
-     "https://street-food-platform-z38i.vercel.app"
+    "https://street-food-platform-z38i.vercel.app"
 ];
+
+console.log("Allowed CORS Origins:", allowedOrigins);
 
 const corsOptions = {
     origin: (origin, callback) => {
@@ -33,6 +35,8 @@ const corsOptions = {
         if (!origin) {
             return callback(null, true);
         }
+
+        console.log("Incoming Origin:", origin);
 
         if (allowedOrigins.includes(origin)) {
             return callback(null, true);
@@ -51,6 +55,7 @@ const corsOptions = {
 // =====================================
 
 const server = http.createServer(app);
+
 
 
 // =====================================
