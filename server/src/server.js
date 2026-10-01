@@ -15,8 +15,43 @@ const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 
-
 const app = express();
+
+
+// =====================================
+// ALLOWED FRONTEND ORIGINS
+// =====================================
+
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://street-food-platform.vercel.app"
+];
+
+
+// =====================================
+// CORS CONFIGURATION
+// =====================================
+
+const corsOptions = {
+    origin: (origin, callback) => {
+
+        // Allow requests without an origin
+        // Example: Postman / server-to-server
+        if (!origin) {
+            return callback(null, true);
+        }
+
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        return callback(
+            new Error("Not allowed by CORS")
+        );
+    },
+
+    credentials: true
+};
 
 
 // =====================================
@@ -32,18 +67,24 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:5173",
-        methods: ["GET", "POST", "PATCH"]
+        origin: allowedOrigins,
+
+        methods: [
+            "GET",
+            "POST",
+            "PATCH"
+        ],
+
+        credentials: true
     }
 });
-app.set("io",io);
 
 
 // =====================================
 // MIDDLEWARE
 // =====================================
 
-app.use(cors());
+app.use(cors(corsOptions));
 
 app.use(express.json());
 
@@ -52,16 +93,35 @@ app.use(express.json());
 // API ROUTES
 // =====================================
 
-app.use("/api/users", userRoutes);
+app.use(
+    "/api/users",
+    userRoutes
+);
 
-app.use("/api/categories", categoryRoutes);
+app.use(
+    "/api/categories",
+    categoryRoutes
+);
 
-app.use("/api/foods", foodRoutes);
+app.use(
+    "/api/foods",
+    foodRoutes
+);
 
-app.use("/api/orders", orderRoutes);
+app.use(
+    "/api/orders",
+    orderRoutes
+);
 
-app.use("/api/admin", adminRoutes);
-app.use("/api/payments",paymentRoutes);
+app.use(
+    "/api/admin",
+    adminRoutes
+);
+
+app.use(
+    "/api/payments",
+    paymentRoutes
+);
 
 
 // =====================================
@@ -81,6 +141,7 @@ io.on("connection", (socket) => {
         `🟢 Socket connected: ${socket.id}`
     );
 
+
     // =================================
     // ADMIN ROOM
     // =================================
@@ -95,7 +156,9 @@ io.on("connection", (socket) => {
 
         console.log(
             "👥 Admin room clients:",
-            io.sockets.adapter.rooms.get("admin_room")?.size || 0
+            io.sockets.adapter.rooms.get(
+                "admin_room"
+            )?.size || 0
         );
 
     });
@@ -105,36 +168,44 @@ io.on("connection", (socket) => {
     // CUSTOMER ORDER ROOM
     // =================================
 
-    socket.on("joinOrderRoom", (orderId) => {
+    socket.on(
+        "joinOrderRoom",
+        (orderId) => {
 
-        if (!orderId) {
-            return;
+            if (!orderId) {
+                return;
+            }
+
+            const roomName =
+                `order_${orderId}`;
+
+            socket.join(roomName);
+
+            console.log(
+                `📦 Customer joined: ${roomName}`
+            );
+
         }
-
-        const roomName = `order_${orderId}`;
-
-        socket.join(roomName);
-
-        console.log(
-            `📦 Customer joined: ${roomName}`
-        );
-
-    });
+    );
 
 
     // =================================
     // DISCONNECT
     // =================================
 
-    socket.on("disconnect", () => {
+    socket.on(
+        "disconnect",
+        () => {
 
-        console.log(
-            `🔴 Socket disconnected: ${socket.id}`
-        );
+            console.log(
+                `🔴 Socket disconnected: ${socket.id}`
+            );
 
-    });
+        }
+    );
 
 });
+
 
 // =====================================
 // HOME API
