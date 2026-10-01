@@ -49,10 +49,16 @@ const CustomerLogin = () => {
             }
 
         } catch (error) {
-            console.error("Login error:", error);
+            console.error("LOGIN FULL ERROR:", error);
+
+            console.log("Error message:", error.message);
+            console.log("Error code:", error.code);
+            console.log("Error response:", error.response);
+            console.log("Error request:", error.request);
 
             setError(
                 error.response?.data?.message ||
+                error.message ||
                 "Login failed. Please try again."
             );
         } finally {
