@@ -201,5 +201,66 @@ router.post("/login", async (req, res) => {
     }
 });
 
+// =====================================
+// RESET ADMIN PASSWORD
+// TEMPORARY USE
+// =====================================
+
+router.post("/reset-password", async (req, res) => {
+    try {
+        const { email, newPassword } = req.body;
+
+        if (!email || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "Email and new password are required"
+            });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: "Password must be at least 6 characters"
+            });
+        }
+
+        const admin = await Admin.findOne({
+            email: email.toLowerCase()
+        });
+
+        if (!admin) {
+            return res.status(404).json({
+                success: false,
+                message: "Admin not found"
+            });
+        }
+
+        const hashedPassword = await bcrypt.hash(
+            newPassword,
+            10
+        );
+
+        admin.password = hashedPassword;
+
+        await admin.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Admin password reset successfully"
+        });
+
+    } catch (error) {
+        console.error(
+            "Admin Password Reset Error:",
+            error
+        );
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to reset admin password"
+        });
+    }
+});
+
 
 module.exports = router;
