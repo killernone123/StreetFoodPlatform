@@ -27,28 +27,43 @@ const allowedOrigins = [
     "https://street-food-platform-z38i.vercel.app"
 ];
 
-console.log("Allowed CORS Origins:", allowedOrigins);
+
+// =====================================
+// CORS CONFIGURATION
+// =====================================
 
 const corsOptions = {
     origin: (origin, callback) => {
 
+        // Allow requests without origin
+        // Example: Postman / server-to-server
         if (!origin) {
             return callback(null, true);
         }
 
-        console.log("Incoming Origin:", origin);
-
+        // Exact allowed origins
         if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        // Allow Vercel deployment/preview URLs
+        if (
+            origin.startsWith("https://street-food-platform") &&
+            origin.endsWith(".vercel.app")
+        ) {
             return callback(null, true);
         }
 
         console.log("Blocked CORS Origin:", origin);
 
-        return callback(new Error("Not allowed by CORS"));
+        return callback(
+            new Error("Not allowed by CORS")
+        );
     },
 
     credentials: true
 };
+
 
 // =====================================
 // HTTP SERVER
@@ -57,14 +72,33 @@ const corsOptions = {
 const server = http.createServer(app);
 
 
-
 // =====================================
 // SOCKET.IO SERVER
 // =====================================
 
 const io = new Server(server, {
     cors: {
-        origin: allowedOrigins,
+        origin: (origin, callback) => {
+
+            if (!origin) {
+                return callback(null, true);
+            }
+
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+
+            if (
+                origin.startsWith("https://street-food-platform") &&
+                origin.endsWith(".vercel.app")
+            ) {
+                return callback(null, true);
+            }
+
+            return callback(
+                new Error("Not allowed by Socket.IO CORS")
+            );
+        },
 
         methods: [
             "GET",
