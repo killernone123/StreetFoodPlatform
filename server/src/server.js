@@ -24,7 +24,8 @@ const app = express();
 
 const allowedOrigins = [
     "http://localhost:5173",
-    "https://street-food-platform.vercel.app"
+    "https://street-food-platform.vercel.app",
+    "https://street-food-platform-z38i-dg80ivxny-street1.vercel.app"
 ];
 
 
