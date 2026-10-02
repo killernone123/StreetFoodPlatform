@@ -100,12 +100,13 @@ const io = new Server(server, {
 // Make Socket.IO available in Express
 // =====================================
 
-app.set("io", io);
+
 
 
 // =====================================
 // MIDDLEWARE
 // =====================================
+app.set("io", io);
 
 app.use(cors(corsOptions));
 
