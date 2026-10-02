@@ -35,8 +35,7 @@ const allowedOrigins = [
 const corsOptions = {
     origin: (origin, callback) => {
 
-        // Allow requests without origin
-        // Example: Postman / server-to-server
+        // Postman / mobile / server-to-server
         if (!origin) {
             return callback(null, true);
         }
@@ -46,7 +45,7 @@ const corsOptions = {
             return callback(null, true);
         }
 
-        // Allow Vercel deployment/preview URLs
+        // Vercel preview deployments
         if (
             origin.startsWith("https://street-food-platform") &&
             origin.endsWith(".vercel.app")
@@ -54,7 +53,7 @@ const corsOptions = {
             return callback(null, true);
         }
 
-        console.log("Blocked CORS Origin:", origin);
+        console.log("❌ Blocked CORS Origin:", origin);
 
         return callback(
             new Error("Not allowed by CORS")
@@ -78,27 +77,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: (origin, callback) => {
-
-            if (!origin) {
-                return callback(null, true);
-            }
-
-            if (allowedOrigins.includes(origin)) {
-                return callback(null, true);
-            }
-
-            if (
-                origin.startsWith("https://street-food-platform") &&
-                origin.endsWith(".vercel.app")
-            ) {
-                return callback(null, true);
-            }
-
-            return callback(
-                new Error("Not allowed by Socket.IO CORS")
-            );
-        },
+        origin: true,
 
         methods: [
             "GET",
@@ -107,8 +86,21 @@ const io = new Server(server, {
         ],
 
         credentials: true
-    }
+    },
+
+    transports: [
+        "polling",
+        "websocket"
+    ]
 });
+
+
+// =====================================
+// IMPORTANT
+// Make Socket.IO available in Express
+// =====================================
+
+app.set("io", io);
 
 
 // =====================================
@@ -267,7 +259,7 @@ const PORT =
 server.listen(PORT, () => {
 
     console.log(
-        `Server running on port ${PORT}`
+        `🚀 Server running on port ${PORT}`
     );
 
 });
