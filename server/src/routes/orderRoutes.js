@@ -7,8 +7,6 @@ const Food = require("../models/Food");
 const userAuth = require("../middleware/userAuth");
 const adminAuth = require("../middleware/adminAuth");
 
-const razorpay = require("../config/razorpay");
-
 const router = express.Router();
 
 
@@ -45,8 +43,7 @@ router.post("/", userAuth, async (req, res) => {
         ) {
             return res.status(400).json({
                 success: false,
-                message:
-                    "Name, phone and address are required"
+                message: "Name, phone and address are required"
             });
         }
 
@@ -76,249 +73,29 @@ router.post("/", userAuth, async (req, res) => {
             });
         }
 
+
         // =====================================
-        // VERIFY RAZORPAY PAYMENT - CUSTOMER
+        // VALIDATE ALL FOOD IDS
         // =====================================
 
-        router.post(
-            "/verify-payment",
-            userAuth,
-            async (req, res) => {
-
-                try {
-
-                    const {
-                        orderId,
-                        razorpay_payment_id,
-                        razorpay_order_id,
-                        razorpay_signature
-                    } = req.body;
-
-
-                    // =====================================
-                    // BASIC VALIDATION
-                    // =====================================
-
-                    if (
-                        !orderId ||
-                        !razorpay_payment_id ||
-                        !razorpay_order_id ||
-                        !razorpay_signature
-                    ) {
-
-                        return res.status(400).json({
-
-                            success: false,
-
-                            message:
-                                "Payment verification details are incomplete"
-                        });
-                    }
-
-
-                    // =====================================
-                    // VALIDATE APP ORDER ID
-                    // =====================================
-
-                    if (
-                        !mongoose.Types.ObjectId.isValid(
-                            orderId
-                        )
-                    ) {
-
-                        return res.status(400).json({
-
-                            success: false,
-
-                            message:
-                                "Invalid order ID"
-                        });
-                    }
-
-
-                    // =====================================
-                    // FIND CUSTOMER ORDER
-                    // =====================================
-
-                    const order =
-                        await Order.findOne({
-
-                            _id:
-                                orderId,
-
-                            userId:
-                                req.user.id
-                        });
-
-
-                    if (!order) {
-
-                        return res.status(404).json({
-
-                            success: false,
-
-                            message:
-                                "Order not found"
-                        });
-                    }
-
-
-                    // =====================================
-                    // CHECK RAZORPAY ORDER ID
-                    // =====================================
-
-                    if (
-                        order.razorpayOrderId !==
-                        razorpay_order_id
-                    ) {
-
-                        return res.status(400).json({
-
-                            success: false,
-
-                            message:
-                                "Razorpay order ID does not match"
-                        });
-                    }
-
-
-                    // =====================================
-                    // CREATE SIGNATURE
-                    // =====================================
-
-                    const crypto =
-                        require("crypto");
-
-
-                    const generatedSignature =
-                        crypto
-                            .createHmac(
-                                "sha256",
-                                process.env.RAZORPAY_KEY_SECRET
-                            )
-                            .update(
-                                razorpay_order_id +
-                                "|" +
-                                razorpay_payment_id
-                            )
-                            .digest("hex");
-
-
-                    // =====================================
-                    // VERIFY SIGNATURE
-                    // =====================================
-
-                    const generatedBuffer =
-                        Buffer.from(generatedSignature);
-
-                    const receivedBuffer =
-                        Buffer.from(razorpay_signature);
-
-                    const isSignatureValid =
-                        generatedBuffer.length ===
-                        receivedBuffer.length &&
-                        crypto.timingSafeEqual(
-                            generatedBuffer,
-                            receivedBuffer
-                        );;
-
-
-                    if (!isSignatureValid) {
-
-                        order.paymentStatus =
-                            "FAILED";
-
-                        await order.save();
-
-
-                        return res.status(400).json({
-
-                            success: false,
-
-                            message:
-                                "Payment signature verification failed"
-                        });
-                    }
-
-
-                    // =====================================
-                    // PAYMENT VERIFIED
-                    // =====================================
-
-                    order.paymentStatus =
-                        "PAID";
-
-
-                    order.razorpayPaymentId =
-                        razorpay_payment_id;
-
-
-                    order.razorpaySignature =
-                        razorpay_signature;
-
-
-                    await order.save();
-
-
-                    // =====================================
-                    // SEND ORDER TO ADMIN
-                    // =====================================
-
-                    const io =
-                        req.app.get("io");
-
-
-                    if (io) {
-
-                        io.to("admin_room").emit(
-                            "newOrder",
-                            order
-                        );
-
-
-                        console.log(
-                            "🔔 PAID order sent to admin:",
-                            order.orderNumber
-                        );
-                    }
-
-
-                    // =====================================
-                    // RESPONSE
-                    // =====================================
-
-                    return res.status(200).json({
-
-                        success: true,
-
-                        message:
-                            "Payment verified successfully",
-
-                        order
-                    });
-
-
-                } catch (error) {
-
-                    console.error(
-                        "Payment Verification Error:",
-                        error
-                    );
-
-
-                    return res.status(500).json({
-
-                        success: false,
-
-                        message:
-                            "Payment verification failed"
-                    });
-                }
+        for (const item of items) {
+
+            if (
+                !item.foodId ||
+                !mongoose.Types.ObjectId.isValid(
+                    item.foodId
+                )
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid food ID"
+                });
             }
-        );
+        }
+
 
         // =====================================
-        // GET FOOD IDs
+        // GET FOOD IDS
         // =====================================
 
         const foodIds = items.map(
@@ -349,37 +126,20 @@ router.post("/", userAuth, async (req, res) => {
         for (const item of items) {
 
             // =================================
-            // VALIDATE FOOD ID
-            // =================================
-
-            if (
-                !mongoose.Types.ObjectId.isValid(
-                    item.foodId
-                )
-            ) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid food ID"
-                });
-            }
-
-
-            // =================================
             // FIND FOOD
             // =================================
 
             const food = foods.find(
                 (foodItem) =>
                     foodItem._id.toString() ===
-                    item.foodId
+                    item.foodId.toString()
             );
 
 
             if (!food) {
                 return res.status(404).json({
                     success: false,
-                    message:
-                        "Food item not found"
+                    message: "Food item not found"
                 });
             }
 
@@ -438,8 +198,12 @@ router.post("/", userAuth, async (req, res) => {
                     selectedOptions[groupName];
 
 
+                // -----------------------------
+                // FIND CUSTOMIZATION GROUP
+                // -----------------------------
+
                 const group =
-                    food.customizations.find(
+                    (food.customizations || []).find(
                         (customization) =>
                             customization.name ===
                             groupName
@@ -455,11 +219,19 @@ router.post("/", userAuth, async (req, res) => {
                 }
 
 
+                // -----------------------------
+                // VALIDATE SELECTED OPTION
+                // -----------------------------
+
+                const selectedOptionName =
+                    selectedOption?.name;
+
+
                 const databaseOption =
-                    group.options.find(
+                    (group.options || []).find(
                         (option) =>
                             option.name ===
-                            selectedOption.name
+                            selectedOptionName
                     );
 
 
@@ -467,10 +239,14 @@ router.post("/", userAuth, async (req, res) => {
                     return res.status(400).json({
                         success: false,
                         message:
-                            `Invalid option: ${selectedOption.name}`
+                            `Invalid option: ${selectedOptionName}`
                     });
                 }
 
+
+                // -----------------------------
+                // OPTION PRICE
+                // -----------------------------
 
                 const optionPrice =
                     Number(
@@ -504,12 +280,20 @@ router.post("/", userAuth, async (req, res) => {
                 item.selectedAddOns || [];
 
 
+            if (!Array.isArray(selectedAddOns)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid add-ons"
+                });
+            }
+
+
             for (
                 const selectedAddOn of selectedAddOns
             ) {
 
                 const databaseAddOn =
-                    food.addOns.find(
+                    (food.addOns || []).find(
                         (addOn) =>
                             addOn.name ===
                             selectedAddOn.name
@@ -620,40 +404,6 @@ router.post("/", userAuth, async (req, res) => {
 
 
         // =====================================
-        // RAZORPAY ORDER
-        // =====================================
-
-        let razorpayOrder = null;
-
-
-        if (paymentMethod === "ONLINE") {
-
-            razorpayOrder =
-                await razorpay.orders.create({
-
-                    amount:
-                        Math.round(
-                            grandTotal * 100
-                        ),
-
-                    currency:
-                        "INR",
-
-                    receipt:
-                        `receipt_${Date.now()}`,
-
-                    notes: {
-                        customerName:
-                            customer.name,
-
-                        customerPhone:
-                            customer.phone
-                    }
-                });
-        }
-
-
-        // =====================================
         // CREATE DATABASE ORDER
         // =====================================
 
@@ -667,8 +417,6 @@ router.post("/", userAuth, async (req, res) => {
 
                 customer,
 
-                // IMPORTANT:
-                // orderItems, NOT validatedItems
                 items:
                     orderItems,
 
@@ -681,12 +429,9 @@ router.post("/", userAuth, async (req, res) => {
                 paymentMethod,
 
                 paymentStatus:
-                    paymentMethod === "ONLINE"
-                        ? "PENDING"
-                        : "PENDING",
+                    "PENDING",
 
-                razorpayOrderId:
-                    razorpayOrder?.id || ""
+                razorpayOrderId: ""
             });
 
 
@@ -698,9 +443,9 @@ router.post("/", userAuth, async (req, res) => {
             req.app.get("io");
 
 
-        // COD:
-        // Payment ki zarurat nahi,
-        // isliye immediately admin ko bhejo.
+        // =====================================
+        // COD ORDER
+        // =====================================
 
         if (
             io &&
@@ -720,16 +465,29 @@ router.post("/", userAuth, async (req, res) => {
         }
 
 
-        // ONLINE:
-        // Abhi payment pending hai.
-        // Payment success ke baad admin ko notify karenge.
+        // =====================================
+        // ONLINE ORDER
+        // =====================================
+        // ONLINE payment ke case me:
+        //
+        // 1. Order database me create hoga
+        // 2. Payment status PENDING rahega
+        // 3. Mobile app /payments/create-order
+        //    call karega
+        // 4. Razorpay payment hoga
+        // 5. /payments/verify payment verify karega
+        // 6. Payment successful hone ke baad
+        //    admin ko newOrder event milega
+        //
+        // Isliye yahan Razorpay order create
+        // NAHI karna hai.
 
 
         // =====================================
         // RESPONSE
         // =====================================
 
-        res.status(201).json({
+        return res.status(201).json({
 
             success: true,
 
@@ -740,24 +498,7 @@ router.post("/", userAuth, async (req, res) => {
 
             order,
 
-            payment:
-                paymentMethod === "ONLINE"
-                    ? {
-
-                        key:
-                            process.env
-                                .RAZORPAY_KEY_ID,
-
-                        razorpayOrderId:
-                            razorpayOrder.id,
-
-                        amount:
-                            razorpayOrder.amount,
-
-                        currency:
-                            razorpayOrder.currency
-                    }
-                    : null
+            payment: null
         });
 
 
@@ -769,7 +510,7 @@ router.post("/", userAuth, async (req, res) => {
         );
 
 
-        res.status(500).json({
+        return res.status(500).json({
 
             success: false,
 
@@ -803,7 +544,7 @@ router.get(
                 });
 
 
-            res.status(200).json({
+            return res.status(200).json({
 
                 success: true,
 
@@ -822,7 +563,7 @@ router.get(
             );
 
 
-            res.status(500).json({
+            return res.status(500).json({
 
                 success: false,
 
@@ -892,7 +633,7 @@ router.get(
             }
 
 
-            res.status(200).json({
+            return res.status(200).json({
 
                 success: true,
 
@@ -908,7 +649,7 @@ router.get(
             );
 
 
-            res.status(500).json({
+            return res.status(500).json({
 
                 success: false,
 
@@ -938,7 +679,7 @@ router.get(
                     });
 
 
-            res.status(200).json({
+            return res.status(200).json({
 
                 success: true,
 
@@ -957,7 +698,7 @@ router.get(
             );
 
 
-            res.status(500).json({
+            return res.status(500).json({
 
                 success: false,
 
@@ -1002,7 +743,9 @@ router.patch(
             // VALIDATE STATUS
             // =================================
 
-            if (!allowedStatuses.includes(status)) {
+            if (
+                !allowedStatuses.includes(status)
+            ) {
 
                 return res.status(400).json({
                     success: false,
@@ -1058,7 +801,8 @@ router.patch(
             // SEND LIVE UPDATE TO CUSTOMER
             // =====================================
 
-            const io = req.app.get("io");
+            const io =
+                req.app.get("io");
 
 
             if (io) {
@@ -1106,7 +850,11 @@ router.patch(
 
                 console.log(
                     "👥 Room clients:",
-                    io.sockets.adapter.rooms.get(roomName)?.size || 0
+                    io.sockets
+                        .adapter
+                        .rooms
+                        .get(roomName)
+                        ?.size || 0
                 );
             }
 
@@ -1144,5 +892,6 @@ router.patch(
         }
     }
 );
+
 
 module.exports = router;

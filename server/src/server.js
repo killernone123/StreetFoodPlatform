@@ -170,18 +170,25 @@ io.on("connection", (socket) => {
     // ADMIN ROOM
     // =================================
 
-   socket.on("joinAdminRoom", () => {
+ socket.on("joinAdminRoom", (callback) => {
     console.log("📥 JOIN ADMIN ROOM REQUEST RECEIVED");
     console.log("🆔 Socket ID:", socket.id);
 
     socket.join("admin_room");
 
-    console.log("✅ Admin joined admin_room:", socket.id);
-
     const clients =
         io.sockets.adapter.rooms.get("admin_room")?.size || 0;
 
+    console.log("✅ Admin joined admin_room:", socket.id);
     console.log("👥 Admin room clients:", clients);
+
+    if (typeof callback === "function") {
+        callback({
+            success: true,
+            room: "admin_room",
+            clients
+        });
+    }
 });
 
     // =================================
