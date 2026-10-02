@@ -170,23 +170,19 @@ io.on("connection", (socket) => {
     // ADMIN ROOM
     // =================================
 
-    socket.on("joinAdminRoom", () => {
+   socket.on("joinAdminRoom", () => {
+    console.log("📥 JOIN ADMIN ROOM REQUEST RECEIVED");
+    console.log("🆔 Socket ID:", socket.id);
 
-        socket.join("admin_room");
+    socket.join("admin_room");
 
-        console.log(
-            `👨‍💼 Admin joined admin_room: ${socket.id}`
-        );
+    console.log("✅ Admin joined admin_room:", socket.id);
 
-        console.log(
-            "👥 Admin room clients:",
-            io.sockets.adapter.rooms.get(
-                "admin_room"
-            )?.size || 0
-        );
+    const clients =
+        io.sockets.adapter.rooms.get("admin_room")?.size || 0;
 
-    });
-
+    console.log("👥 Admin room clients:", clients);
+});
 
     // =================================
     // CUSTOMER ORDER ROOM
