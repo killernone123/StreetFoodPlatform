@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import API from "../services/api";
 
-const SOCKET_URL = "http://localhost:5000";
+const SOCKET_URL = "https://streetfoodplatform-1.onrender.com";
 
 const Admin = () => {
 
@@ -145,11 +145,14 @@ const Admin = () => {
         // CONNECT SOCKET
         // =================================
 
-        const socket = io("http://localhost:5000", {
-            transports: ["websocket"],
-            reconnection: true
+        const socket = io(SOCKET_URL, {
+            transports: ["polling"],
+            reconnection: true,
+            reconnectionAttempts: 10,
+            reconnectionDelay: 2000,
+            timeout: 15000
         });
-
+        window.adminSocket = socket;
         console.log("🔌 Connecting admin socket...");
 
 
@@ -177,13 +180,16 @@ const Admin = () => {
         // =================================
         // NEW ORDER
         // =================================
-        socket.on("newOrder", (newOrder) => {
+        socket.on("newOrder", async (newOrder) => {
 
             console.log(
                 "🔔 NEW ORDER RECEIVED:",
                 newOrder
             );
-            
+
+            // 🔄 Get latest orders from backend
+            await fetchOrders();
+
             setNewOrderAlert(newOrder);
 
             setTimeout(() => {
