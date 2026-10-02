@@ -980,8 +980,7 @@ router.patch(
 
         try {
 
-            const { status } =
-                req.body;
+            const { status } = req.body;
 
 
             // =================================
@@ -989,21 +988,13 @@ router.patch(
             // =================================
 
             const allowedStatuses = [
-
                 "PLACED",
-
                 "CONFIRMED",
-
                 "PREPARING",
-
                 "READY",
-
                 "OUT_FOR_DELIVERY",
-
                 "DELIVERED",
-
                 "CANCELLED"
-
             ];
 
 
@@ -1011,18 +1002,11 @@ router.patch(
             // VALIDATE STATUS
             // =================================
 
-            if (
-                !allowedStatuses.includes(
-                    status
-                )
-            ) {
+            if (!allowedStatuses.includes(status)) {
 
                 return res.status(400).json({
-
                     success: false,
-
-                    message:
-                        "Invalid order status"
+                    message: "Invalid order status"
                 });
             }
 
@@ -1038,11 +1022,8 @@ router.patch(
             ) {
 
                 return res.status(400).json({
-
                     success: false,
-
-                    message:
-                        "Invalid order ID"
+                    message: "Invalid order ID"
                 });
             }
 
@@ -1053,17 +1034,12 @@ router.patch(
 
             const order =
                 await Order.findByIdAndUpdate(
-
                     req.params.id,
-
                     {
-                        orderStatus:
-                            status
+                        orderStatus: status
                     },
-
                     {
                         new: true,
-
                         runValidators: true
                     }
                 );
@@ -1072,11 +1048,8 @@ router.patch(
             if (!order) {
 
                 return res.status(404).json({
-
                     success: false,
-
-                    message:
-                        "Order not found"
+                    message: "Order not found"
                 });
             }
 
@@ -1085,33 +1058,55 @@ router.patch(
             // SEND LIVE UPDATE TO CUSTOMER
             // =====================================
 
-            const io =
-                req.app.get("io");
+            const io = req.app.get("io");
 
 
             if (io) {
 
-                io.to(
-                    `order_${order._id}`
-                ).emit(
+                const roomName =
+                    `order_${order._id.toString()}`;
+
+
+                io.to(roomName).emit(
                     "orderStatusUpdated",
                     {
                         orderId:
-                            order._id,
+                            order._id.toString(),
 
                         orderNumber:
                             order.orderNumber,
 
-                        status:
-                            order.orderStatus
+                        orderStatus:
+                            order.orderStatus,
+
+                        paymentStatus:
+                            order.paymentStatus
                     }
                 );
 
 
                 console.log(
-                    "🔔 Customer status updated:",
-                    order.orderNumber,
-                    status
+                    "🔔 LIVE STATUS SENT TO CUSTOMER"
+                );
+
+                console.log(
+                    "📦 Order:",
+                    order.orderNumber
+                );
+
+                console.log(
+                    "📊 Status:",
+                    order.orderStatus
+                );
+
+                console.log(
+                    "🏠 Room:",
+                    roomName
+                );
+
+                console.log(
+                    "👥 Room clients:",
+                    io.sockets.adapter.rooms.get(roomName)?.size || 0
                 );
             }
 
@@ -1120,7 +1115,7 @@ router.patch(
             // RESPONSE
             // =====================================
 
-            res.status(200).json({
+            return res.status(200).json({
 
                 success: true,
 
@@ -1139,7 +1134,7 @@ router.patch(
             );
 
 
-            res.status(500).json({
+            return res.status(500).json({
 
                 success: false,
 
@@ -1149,6 +1144,5 @@ router.patch(
         }
     }
 );
-
 
 module.exports = router;
