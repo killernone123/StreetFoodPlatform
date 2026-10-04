@@ -3,13 +3,16 @@ const Category = require("../models/category");
 
 const router = express.Router();
 
+// ===============================
 // GET ALL ACTIVE CATEGORIES
+// CUSTOMER APP
+// ===============================
 router.get("/", async (req, res) => {
     try {
         const categories = await Category.find({
             isActive: true
         }).sort({
-            sortOrder: 1
+            sortOder: 1
         });
 
         res.status(200).json({
@@ -19,6 +22,8 @@ router.get("/", async (req, res) => {
         });
 
     } catch (error) {
+        console.log("GET CATEGORIES ERROR:", error);
+
         res.status(500).json({
             success: false,
             message: error.message
@@ -27,19 +32,109 @@ router.get("/", async (req, res) => {
 });
 
 
-router.post("/", async(req, res)=>{
-    try{
+// ===============================
+// POST CREATE CATEGORY
+// ADMIN
+// ===============================
+router.post("/", async (req, res) => {
+    try {
         const category = await Category.create(req.body);
 
         res.status(201).json({
             success: true,
-            message:"Category Created Successfully", category
+            message: "Category Created Successfully",
+            category
         });
 
-    }catch(error){
-        res.status(500).json({success:false, message:error.message});
+    } catch (error) {
+        console.log("CREATE CATEGORY ERROR:", error);
 
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 });
+
+
+// ===============================
+// PUT UPDATE CATEGORY
+// ADMIN
+// ===============================
+router.put("/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const category = await Category.findByIdAndUpdate(
+            id,
+            {
+                name: req.body.name,
+                slug: req.body.slug,
+                image: req.body.image || "",
+                isActive: req.body.isActive,
+                sortOder: Number(req.body.sortOder) || 1
+            },
+            {
+                new: true,
+                runValidators: true
+            }
+        );
+
+        if (!category) {
+            return res.status(404).json({
+                success: false,
+                message: "Category not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Category Updated Successfully",
+            category
+        });
+
+    } catch (error) {
+        console.log("UPDATE CATEGORY ERROR:", error);
+
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+
+// ===============================
+// DELETE CATEGORY
+// ADMIN
+// ===============================
+router.delete("/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const category = await Category.findByIdAndDelete(id);
+
+        if (!category) {
+            return res.status(404).json({
+                success: false,
+                message: "Category not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Category Deleted Successfully"
+        });
+
+    } catch (error) {
+        console.log("DELETE CATEGORY ERROR:", error);
+
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
 
 module.exports = router;
