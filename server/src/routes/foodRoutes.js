@@ -1,5 +1,6 @@
 const express = require("express");
 const Food = require("../models/Food");
+const Category = require("../models/category");
 const adminAuth = require("../middleware/adminAuth");
 
 const router = express.Router();
@@ -7,29 +8,90 @@ const router = express.Router();
 
 // ========================================
 // GET ALL FOODS
-// Public API
+// PUBLIC API
+// ONLY ACTIVE CATEGORY FOODS
 // ========================================
 
 router.get("/", async (req, res) => {
-
     try {
 
         const { categoryId } = req.query;
 
-        let filter = {};
+        // ========================================
+        // FIND ACTIVE CATEGORIES
+        // ========================================
+
+        const activeCategories = await Category.find({
+            isActive: true
+        }).select("_id");
+
+        const activeCategoryIds =
+            activeCategories.map(
+                (category) => category._id
+            );
+
+
+        // ========================================
+        // FOOD FILTER
+        // ========================================
+
+        let filter = {
+            categoryId: {
+                $in: activeCategoryIds
+            }
+        };
+
+
+        // ========================================
+        // SPECIFIC CATEGORY FILTER
+        // ========================================
 
         if (categoryId) {
+
+            // Agar requested category inactive hai
+            // to koi food return nahi hoga
+
+            const isActiveCategory =
+                activeCategoryIds.some(
+                    (id) =>
+                        id.toString() ===
+                        categoryId.toString()
+                );
+
+            if (!isActiveCategory) {
+
+                return res.status(200).json({
+
+                    success: true,
+
+                    count: 0,
+
+                    foods: []
+
+                });
+            }
+
             filter.categoryId = categoryId;
         }
+
+
+        // ========================================
+        // GET FOODS
+        // ========================================
 
         const foods = await Food.find(filter)
             .populate(
                 "categoryId",
-                "name slug"
+                "name slug isActive"
             )
             .sort({
                 createdAt: -1
             });
+
+
+        // ========================================
+        // RESPONSE
+        // ========================================
 
         res.status(200).json({
 
@@ -42,6 +104,11 @@ router.get("/", async (req, res) => {
         });
 
     } catch (error) {
+
+        console.log(
+            "GET FOODS ERROR:",
+            error
+        );
 
         res.status(500).json({
 
@@ -82,6 +149,11 @@ router.post(
             });
 
         } catch (error) {
+
+            console.log(
+                "CREATE FOOD ERROR:",
+                error
+            );
 
             res.status(500).json({
 
@@ -142,6 +214,11 @@ router.put(
 
         } catch (error) {
 
+            console.log(
+                "UPDATE FOOD ERROR:",
+                error
+            );
+
             res.status(500).json({
 
                 success: false,
@@ -194,16 +271,22 @@ router.delete(
 
         } catch (error) {
 
+            console.log(
+                "DELETE FOOD ERROR:",
+                error
+            );
+
             res.status(500).json({
 
                 success: false,
 
-                message: error.message
+                message:
+                    "Food deleted successfully"
 
             });
         }
+
     }
 );
 
 
-module.exports = router;
