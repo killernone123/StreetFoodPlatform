@@ -8,6 +8,10 @@ const { Server } = require("socket.io");
 
 const connectDB = require("./config/db");
 
+// =====================================
+// ROUTES
+// =====================================
+
 const categoryRoutes = require("./routes/categoryRoutes");
 const foodRoutes = require("./routes/foodRoutes");
 const orderRoutes = require("./routes/orderRoutes");
@@ -17,9 +21,49 @@ const paymentRoutes = require("./routes/paymentRoutes");
 
 const app = express();
 
+// =====================================
+// CHECK ROUTES
+// =====================================
+
+console.log("=====================================");
+console.log("🔍 CHECKING ROUTES");
+console.log("=====================================");
+
+console.log(
+    "userRoutes:",
+    typeof userRoutes
+);
+
+console.log(
+    "categoryRoutes:",
+    typeof categoryRoutes
+);
+
+console.log(
+    "foodRoutes:",
+    typeof foodRoutes
+);
+
+console.log(
+    "orderRoutes:",
+    typeof orderRoutes
+);
+
+console.log(
+    "adminRoutes:",
+    typeof adminRoutes
+);
+
+console.log(
+    "paymentRoutes:",
+    typeof paymentRoutes
+);
+
+console.log("=====================================");
+
 
 // =====================================
-// ALLOWED FRONTEND ORIGINS
+// CORS
 // =====================================
 
 const allowedOrigins = [
@@ -27,15 +71,10 @@ const allowedOrigins = [
     "https://street-food-platform-z38i.vercel.app"
 ];
 
-
-// =====================================
-// CORS CONFIGURATION
-// =====================================
-
 const corsOptions = {
     origin: (origin, callback) => {
 
-        // Postman / mobile / server-to-server
+        // Postman / Mobile / Server-to-server
         if (!origin) {
             return callback(null, true);
         }
@@ -47,13 +86,18 @@ const corsOptions = {
 
         // Vercel preview deployments
         if (
-            origin.startsWith("https://street-food-platform") &&
+            origin.startsWith(
+                "https://street-food-platform"
+            ) &&
             origin.endsWith(".vercel.app")
         ) {
             return callback(null, true);
         }
 
-        console.log("❌ Blocked CORS Origin:", origin);
+        console.log(
+            "❌ Blocked CORS Origin:",
+            origin
+        );
 
         return callback(
             new Error("Not allowed by CORS")
@@ -72,7 +116,7 @@ const server = http.createServer(app);
 
 
 // =====================================
-// SOCKET.IO SERVER
+// SOCKET.IO
 // =====================================
 
 const io = new Server(server, {
@@ -96,16 +140,9 @@ const io = new Server(server, {
 
 
 // =====================================
-// IMPORTANT
-// Make Socket.IO available in Express
+// APP MIDDLEWARE
 // =====================================
 
-
-
-
-// =====================================
-// MIDDLEWARE
-// =====================================
 app.set("io", io);
 
 app.use(cors(corsOptions));
@@ -114,37 +151,72 @@ app.use(express.json());
 
 
 // =====================================
+// ROUTE VALIDATION
+// =====================================
+
+function mountRoute(path, route, name) {
+
+    if (typeof route !== "function") {
+
+        console.error(
+            `❌ INVALID ROUTE: ${name}`
+        );
+
+        console.error(
+            `Expected router/function but received: ${typeof route}`
+        );
+
+        throw new TypeError(
+            `${name} is not exporting an Express router`
+        );
+    }
+
+    console.log(
+        `✅ Route loaded: ${name} -> ${path}`
+    );
+
+    app.use(path, route);
+}
+
+
+// =====================================
 // API ROUTES
 // =====================================
 
-app.use(
+mountRoute(
     "/api/users",
-    userRoutes
+    userRoutes,
+    "userRoutes"
 );
 
-app.use(
+mountRoute(
     "/api/categories",
-    categoryRoutes
+    categoryRoutes,
+    "categoryRoutes"
 );
 
-app.use(
+mountRoute(
     "/api/foods",
-    foodRoutes
+    foodRoutes,
+    "foodRoutes"
 );
 
-app.use(
+mountRoute(
     "/api/orders",
-    orderRoutes
+    orderRoutes,
+    "orderRoutes"
 );
 
-app.use(
+mountRoute(
     "/api/admin",
-    adminRoutes
+    adminRoutes,
+    "adminRoutes"
 );
 
-app.use(
+mountRoute(
     "/api/payments",
-    paymentRoutes
+    paymentRoutes,
+    "paymentRoutes"
 );
 
 
@@ -170,26 +242,49 @@ io.on("connection", (socket) => {
     // ADMIN ROOM
     // =================================
 
- socket.on("joinAdminRoom", (callback) => {
-    console.log("📥 JOIN ADMIN ROOM REQUEST RECEIVED");
-    console.log("🆔 Socket ID:", socket.id);
+    socket.on(
+        "joinAdminRoom",
+        (callback) => {
 
-    socket.join("admin_room");
+            console.log(
+                "📥 JOIN ADMIN ROOM REQUEST RECEIVED"
+            );
 
-    const clients =
-        io.sockets.adapter.rooms.get("admin_room")?.size || 0;
+            console.log(
+                "🆔 Socket ID:",
+                socket.id
+            );
 
-    console.log("✅ Admin joined admin_room:", socket.id);
-    console.log("👥 Admin room clients:", clients);
+            socket.join("admin_room");
 
-    if (typeof callback === "function") {
-        callback({
-            success: true,
-            room: "admin_room",
-            clients
-        });
-    }
-});
+            const clients =
+                io.sockets.adapter.rooms.get(
+                    "admin_room"
+                )?.size || 0;
+
+            console.log(
+                "✅ Admin joined admin_room:",
+                socket.id
+            );
+
+            console.log(
+                "👥 Admin room clients:",
+                clients
+            );
+
+            if (
+                typeof callback ===
+                "function"
+            ) {
+                callback({
+                    success: true,
+                    room: "admin_room",
+                    clients
+                });
+            }
+        }
+    );
+
 
     // =================================
     // CUSTOMER ORDER ROOM
@@ -211,7 +306,6 @@ io.on("connection", (socket) => {
             console.log(
                 `📦 Customer joined: ${roomName}`
             );
-
         }
     );
 
@@ -227,7 +321,6 @@ io.on("connection", (socket) => {
             console.log(
                 `🔴 Socket disconnected: ${socket.id}`
             );
-
         }
     );
 
@@ -238,14 +331,16 @@ io.on("connection", (socket) => {
 // HOME API
 // =====================================
 
-app.get("/", (req, res) => {
+app.get(
+    "/",
+    (req, res) => {
 
-    res.json({
-        message:
-            "Street Food API is Running"
-    });
-
-});
+        res.json({
+            message:
+                "Street Food API is Running"
+        });
+    }
+);
 
 
 // =====================================
@@ -260,10 +355,13 @@ const PORT =
 // START SERVER
 // =====================================
 
-server.listen(PORT, () => {
+server.listen(
+    PORT,
+    () => {
 
-    console.log(
-        `🚀 Server running on port ${PORT}`
-    );
+        console.log(
+            `🚀 Server running on port ${PORT}`
+        );
 
-});
+    }
+);
