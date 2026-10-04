@@ -3,10 +3,10 @@ const Category = require("../models/category");
 
 const router = express.Router();
 
-// ===============================
+// =====================================================
 // GET ALL ACTIVE CATEGORIES
 // CUSTOMER APP
-// ===============================
+// =====================================================
 router.get("/", async (req, res) => {
     try {
         const categories = await Category.find({
@@ -32,10 +32,39 @@ router.get("/", async (req, res) => {
 });
 
 
-// ===============================
+// =====================================================
+// GET ALL CATEGORIES
+// ADMIN MOBILE
+// ACTIVE + INACTIVE BOTH
+// =====================================================
+router.get("/admin/all", async (req, res) => {
+    try {
+        const categories = await Category.find({})
+            .sort({
+                sortOder: 1
+            });
+
+        res.status(200).json({
+            success: true,
+            count: categories.length,
+            categories
+        });
+
+    } catch (error) {
+        console.log("GET ADMIN CATEGORIES ERROR:", error);
+
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+
+// =====================================================
 // POST CREATE CATEGORY
 // ADMIN
-// ===============================
+// =====================================================
 router.post("/", async (req, res) => {
     try {
         const category = await Category.create(req.body);
@@ -57,10 +86,10 @@ router.post("/", async (req, res) => {
 });
 
 
-// ===============================
+// =====================================================
 // PUT UPDATE CATEGORY
 // ADMIN
-// ===============================
+// =====================================================
 router.put("/:id", async (req, res) => {
     try {
         const { id } = req.params;
@@ -104,10 +133,10 @@ router.put("/:id", async (req, res) => {
 });
 
 
-// ===============================
+// =====================================================
 // DELETE CATEGORY
 // ADMIN
-// ===============================
+// =====================================================
 router.delete("/:id", async (req, res) => {
     try {
         const { id } = req.params;
