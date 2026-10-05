@@ -18,6 +18,7 @@ const orderRoutes = require("./routes/orderRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const supportRoutes = require("./routes/supportRoutes");
 
 const app = express();
 
@@ -57,6 +58,11 @@ console.log(
 console.log(
     "paymentRoutes:",
     typeof paymentRoutes
+);
+
+console.log(
+    "supportRoutes:",
+    typeof supportRoutes
 );
 
 console.log("=====================================");
@@ -217,6 +223,16 @@ mountRoute(
     "/api/payments",
     paymentRoutes,
     "paymentRoutes"
+);
+
+// =====================================
+// SUPPORT / FEEDBACK ROUTE
+// =====================================
+
+mountRoute(
+    "/api/support",
+    supportRoutes,
+    "supportRoutes"
 );
 
 
