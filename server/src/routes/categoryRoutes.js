@@ -3,6 +3,7 @@ const Category = require("../models/category");
 
 const router = express.Router();
 
+
 // =====================================================
 // GET ALL ACTIVE CATEGORIES
 // CUSTOMER APP
@@ -69,6 +70,18 @@ router.post("/", async (req, res) => {
     try {
         const category = await Category.create(req.body);
 
+        // 🔥 REAL-TIME CATEGORY UPDATE
+        const io = req.app.get("io");
+
+        if (io) {
+            io.emit("categoryUpdated", {
+                action: "created",
+                category
+            });
+
+            console.log("⚡ CATEGORY CREATED EVENT SENT");
+        }
+
         res.status(201).json({
             success: true,
             message: "Category Created Successfully",
@@ -116,6 +129,23 @@ router.put("/:id", async (req, res) => {
             });
         }
 
+
+        // 🔥 REAL-TIME CATEGORY UPDATE
+        const io = req.app.get("io");
+
+        if (io) {
+            io.emit("categoryUpdated", {
+                action: "updated",
+                category
+            });
+
+            console.log(
+                "⚡ CATEGORY UPDATED EVENT SENT:",
+                category._id.toString()
+            );
+        }
+
+
         res.status(200).json({
             success: true,
             message: "Category Updated Successfully",
@@ -149,6 +179,23 @@ router.delete("/:id", async (req, res) => {
                 message: "Category not found"
             });
         }
+
+
+        // 🔥 REAL-TIME CATEGORY UPDATE
+        const io = req.app.get("io");
+
+        if (io) {
+            io.emit("categoryUpdated", {
+                action: "deleted",
+                categoryId: id
+            });
+
+            console.log(
+                "⚡ CATEGORY DELETED EVENT SENT:",
+                id
+            );
+        }
+
 
         res.status(200).json({
             success: true,

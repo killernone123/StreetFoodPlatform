@@ -19,6 +19,8 @@ const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const supportRoutes = require("./routes/supportRoutes");
+const deliveryRoutes = require("./routes/deliveryRoutes");
+const uploadRoutes = require("./routes/uploadRoutes");
 
 const app = express();
 
@@ -234,6 +236,17 @@ mountRoute(
     supportRoutes,
     "supportRoutes"
 );
+mountRoute(
+    "/api/delivery",
+    deliveryRoutes,
+    "deliveryRoutes"
+);
+mountRoute(
+    "/api/uploads",
+    uploadRoutes,
+    "uploadRoutes"
+);
+
 
 
 // =====================================
