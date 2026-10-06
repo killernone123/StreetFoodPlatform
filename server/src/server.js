@@ -21,6 +21,7 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const supportRoutes = require("./routes/supportRoutes");
 const deliveryRoutes = require("./routes/deliveryRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
+const bannerRoutes = require("./routes/bannerRoutes");
 
 const app = express();
 
@@ -245,6 +246,11 @@ mountRoute(
     "/api/uploads",
     uploadRoutes,
     "uploadRoutes"
+);
+mountRoute(
+    "/api/banners",
+    bannerRoutes,
+    "bannerRoutes"
 );
 
 
