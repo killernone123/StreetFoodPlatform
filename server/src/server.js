@@ -22,6 +22,7 @@ const supportRoutes = require("./routes/supportRoutes");
 const deliveryRoutes = require("./routes/deliveryRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const bannerRoutes = require("./routes/bannerRoutes");
+const pushNotificationRoutes = require("./routes/pushNotificationRoutes");
 
 const app = express();
 
@@ -159,6 +160,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 
+
 // =====================================
 // ROUTE VALIDATION
 // =====================================
@@ -226,6 +228,10 @@ mountRoute(
     "/api/payments",
     paymentRoutes,
     "paymentRoutes"
+);
+app.use(
+  "/api/push-notifications",
+  pushNotificationRoutes
 );
 
 // =====================================
