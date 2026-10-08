@@ -12,7 +12,8 @@ import FoodManagement from "./pages/FoodManagement";
 import CustomerLogin from "./pages/CustomerLogin";
 import CustomerRegister from "./pages/CustomerRegister";
 import MyOrders from "./pages/MyOrders";
-import OrderDetails from"./pages/OrderDetails";
+import OrderDetails from "./pages/OrderDetails";
+import AdminRegister from "./pages/AdminRegister";
 
 function App() {
     return (
@@ -36,6 +37,10 @@ function App() {
                 <Route
                     path="/admin-login"
                     element={<AdminLogin />} />
+                <Route
+                    path="/admin-register"
+                    element={<AdminRegister />}
+                />
 
                 <Route
                     path="/admin/foods"
@@ -55,8 +60,8 @@ function App() {
                     element={<MyOrders />}
                 />
                 <Route
-                path="/my-orders/:id"
-                element={<OrderDetails/>}/>
+                    path="/my-orders/:id"
+                    element={<OrderDetails />} />
 
             </Routes>
 

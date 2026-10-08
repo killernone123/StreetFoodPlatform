@@ -94,7 +94,7 @@ export default function LoginScreen() {
           {
             text: "Continue",
             onPress: () => {
-              router.replace("/checkout");
+              router.replace("/");
             },
           },
         ]

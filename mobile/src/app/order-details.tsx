@@ -96,10 +96,15 @@ export default function OrderDetailsScreen() {
       if (error?.response?.status === 401) {
         Alert.alert(
           "Session Expired",
-          "Please login again."
+          "Please login again.",
+          [
+            {
+              text: "Login",
+              onPress: () => router.replace("/login"),
+            },
+          ]
         );
 
-        router.replace("/login");
         return;
       }
 
@@ -115,7 +120,7 @@ export default function OrderDetailsScreen() {
   };
 
   // ==============================
-  // NORMAL ORDER FETCH
+  // INITIAL FETCH
   // ==============================
 
   useEffect(() => {
@@ -123,7 +128,7 @@ export default function OrderDetailsScreen() {
   }, [orderId]);
 
   // ==============================
-  // LIVE SOCKET CONNECTION
+  // SOCKET.IO
   // ==============================
 
   useEffect(() => {
@@ -136,15 +141,6 @@ export default function OrderDetailsScreen() {
       "🔌 Connecting Socket.IO...",
       SOCKET_URL
     );
-
-    /*
-     * IMPORTANT:
-     * Render Socket.IO polling handshake
-     * successfully working hai.
-     *
-     * Isliye abhi sirf polling use kar rahe hain.
-     * WebSocket upgrade disable kiya gaya hai.
-     */
 
     const socket: Socket = io(SOCKET_URL, {
       transports: ["polling"],
@@ -159,10 +155,6 @@ export default function OrderDetailsScreen() {
       forceNew: true,
     });
 
-    // ===================================
-    // SOCKET CONNECTED
-    // ===================================
-
     socket.on("connect", () => {
       console.log(
         "🟢 Socket connected:",
@@ -171,7 +163,6 @@ export default function OrderDetailsScreen() {
 
       setLiveConnected(true);
 
-      // Join current order room
       socket.emit(
         "joinOrderRoom",
         orderId
@@ -183,10 +174,6 @@ export default function OrderDetailsScreen() {
       );
     });
 
-    // ===================================
-    // SOCKET DISCONNECTED
-    // ===================================
-
     socket.on("disconnect", (reason) => {
       console.log(
         "🔴 Socket disconnected:",
@@ -196,56 +183,41 @@ export default function OrderDetailsScreen() {
       setLiveConnected(false);
     });
 
-    // ===================================
-    // SOCKET CONNECTION ERROR
-    // ===================================
-
     socket.on("connect_error", (error) => {
       console.log(
         "❌ Socket connection error:",
         error.message
       );
 
-      console.log(
-        "❌ Socket error details:",
-        error
-      );
-
       setLiveConnected(false);
     });
 
-    // ===================================
-    // RECONNECT ATTEMPT
-    // ===================================
+    socket.io.on(
+      "reconnect_attempt",
+      (attempt) => {
+        console.log(
+          "🔄 Socket reconnect attempt:",
+          attempt
+        );
+      }
+    );
 
-    socket.io.on("reconnect_attempt", (attempt) => {
-      console.log(
-        "🔄 Socket reconnect attempt:",
-        attempt
-      );
-    });
+    socket.io.on(
+      "reconnect",
+      (attempt) => {
+        console.log(
+          "🟢 Socket reconnected:",
+          attempt
+        );
 
-    // ===================================
-    // RECONNECTED
-    // ===================================
+        setLiveConnected(true);
 
-    socket.io.on("reconnect", (attempt) => {
-      console.log(
-        "🟢 Socket reconnected:",
-        attempt
-      );
-
-      setLiveConnected(true);
-
-      socket.emit(
-        "joinOrderRoom",
-        orderId
-      );
-    });
-
-    // ===================================
-    // ORDER STATUS UPDATE LISTENER
-    // ===================================
+        socket.emit(
+          "joinOrderRoom",
+          orderId
+        );
+      }
+    );
 
     socket.on(
       "orderStatusUpdated",
@@ -258,11 +230,6 @@ export default function OrderDetailsScreen() {
         if (!data) {
           return;
         }
-
-        /*
-         * Backend orderId string ya ObjectId
-         * dono cases handle karne ke liye.
-         */
 
         const updatedOrderId =
           data.orderId?.toString?.() ||
@@ -303,17 +270,12 @@ export default function OrderDetailsScreen() {
       }
     );
 
-    // ===================================
-    // CLEANUP
-    // ===================================
-
     return () => {
       console.log(
         "🧹 Closing Socket.IO"
       );
 
       socket.removeAllListeners();
-
       socket.disconnect();
     };
   }, [orderId]);
@@ -347,10 +309,12 @@ export default function OrderDetailsScreen() {
   const formatStatus = (
     status: string
   ) => {
-    return status.replaceAll(
-      "_",
-      " "
-    );
+    return status
+      .replaceAll("_", " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (char) =>
+        char.toUpperCase()
+      );
   };
 
   const formatDate = (
@@ -359,6 +323,46 @@ export default function OrderDetailsScreen() {
     return new Date(
       date
     ).toLocaleString("en-IN");
+  };
+
+  // ==============================
+  // CUSTOMIZATION TEXT
+  // ==============================
+
+  const getOptionName = (
+    option: any
+  ) => {
+    if (!option) {
+      return "";
+    }
+
+    if (typeof option === "string") {
+      return option;
+    }
+
+    return (
+      option.name ||
+      option.title ||
+      option.label ||
+      option.value ||
+      option.optionName ||
+      ""
+    );
+  };
+
+  const getOptionPrice = (
+    option: any
+  ) => {
+    if (!option || typeof option === "string") {
+      return 0;
+    }
+
+    return Number(
+      option.price ||
+        option.additionalPrice ||
+        option.extraPrice ||
+        0
+    );
   };
 
   // ==============================
@@ -406,19 +410,16 @@ export default function OrderDetailsScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={
-        styles.content
-      }
+      contentContainerStyle={styles.content}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
         />
       }
+      showsVerticalScrollIndicator={false}
     >
-      {/* ==============================
-          HEADER
-      ============================== */}
+      {/* HEADER */}
 
       <View style={styles.header}>
         <TouchableOpacity
@@ -434,20 +435,15 @@ export default function OrderDetailsScreen() {
           Order Details
         </Text>
 
-        <View
-          style={{ width: 42 }}
-        />
+        <View style={{ width: 42 }} />
       </View>
 
-      {/* ==============================
-          LIVE STATUS INDICATOR
-      ============================== */}
+      {/* LIVE STATUS */}
 
       <View style={styles.liveBar}>
         <View
           style={[
             styles.liveDot,
-
             liveConnected
               ? styles.liveDotConnected
               : styles.liveDotDisconnected,
@@ -461,9 +457,7 @@ export default function OrderDetailsScreen() {
         </Text>
       </View>
 
-      {/* ==============================
-          ORDER NUMBER
-      ============================== */}
+      {/* ORDER NUMBER */}
 
       <View style={styles.orderCard}>
         <Text style={styles.smallLabel}>
@@ -475,29 +469,19 @@ export default function OrderDetailsScreen() {
         </Text>
 
         <Text style={styles.date}>
-          {formatDate(
-            order.createdAt
-          )}
+          {formatDate(order.createdAt)}
         </Text>
       </View>
 
-      {/* ==============================
-          CURRENT STATUS
-      ============================== */}
+      {/* CURRENT STATUS */}
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>
           Order Status
         </Text>
 
-        <View
-          style={
-            styles.currentStatusBox
-          }
-        >
-          <Text
-            style={styles.statusEmoji}
-          >
+        <View style={styles.currentStatusBox}>
+          <Text style={styles.statusEmoji}>
             {order.orderStatus ===
             "DELIVERED"
               ? "✅"
@@ -507,24 +491,14 @@ export default function OrderDetailsScreen() {
               : "🛵"}
           </Text>
 
-          <View
-            style={{ flex: 1 }}
-          >
-            <Text
-              style={
-                styles.currentStatus
-              }
-            >
+          <View style={{ flex: 1 }}>
+            <Text style={styles.currentStatus}>
               {formatStatus(
                 order.orderStatus
               )}
             </Text>
 
-            <Text
-              style={
-                styles.statusSubText
-              }
-            >
+            <Text style={styles.statusSubText}>
               {order.orderStatus ===
               "DELIVERED"
                 ? "Your order has been delivered."
@@ -536,43 +510,27 @@ export default function OrderDetailsScreen() {
           </View>
         </View>
 
-        {/* ==============================
-            TRACKING STEPS
-        ============================== */}
+        {/* TRACKING */}
 
         {order.orderStatus !==
           "CANCELLED" && (
-          <View
-            style={
-              styles.trackingContainer
-            }
-          >
+          <View style={styles.trackingContainer}>
             {STATUS_STEPS.map(
-              (
-                status,
-                index
-              ) => {
+              (status, index) => {
                 const completed =
                   index <=
                   currentStatusIndex;
 
                 const isLast =
                   index ===
-                  STATUS_STEPS.length -
-                    1;
+                  STATUS_STEPS.length - 1;
 
                 return (
                   <View
                     key={status}
-                    style={
-                      styles.stepRow
-                    }
+                    style={styles.stepRow}
                   >
-                    <View
-                      style={
-                        styles.stepLeft
-                      }
-                    >
+                    <View style={styles.stepLeft}>
                       <View
                         style={[
                           styles.dot,
@@ -581,11 +539,7 @@ export default function OrderDetailsScreen() {
                         ]}
                       >
                         {completed && (
-                          <Text
-                            style={
-                              styles.check
-                            }
-                          >
+                          <Text style={styles.check}>
                             ✓
                           </Text>
                         )}
@@ -610,9 +564,7 @@ export default function OrderDetailsScreen() {
                           styles.completedStepText,
                       ]}
                     >
-                      {formatStatus(
-                        status
-                      )}
+                      {formatStatus(status)}
                     </Text>
                   </View>
                 );
@@ -623,7 +575,7 @@ export default function OrderDetailsScreen() {
       </View>
 
       {/* ==============================
-          ITEMS
+          YOUR ITEMS
       ============================== */}
 
       <View style={styles.card}>
@@ -635,62 +587,173 @@ export default function OrderDetailsScreen() {
           (item, index) => (
             <View
               key={`${item.foodId || index}`}
-              style={styles.itemRow}
+              style={styles.itemContainer}
             >
-              <View
-                style={
-                  styles.quantityBox
-                }
-              >
-                <Text
-                  style={
-                    styles.quantity
-                  }
-                >
-                  {item.quantity}x
+              {/* MAIN ITEM */}
+
+              <View style={styles.itemRow}>
+                <View style={styles.quantityBox}>
+                  <Text style={styles.quantity}>
+                    {item.quantity}x
+                  </Text>
+                </View>
+
+                <View style={styles.itemInfo}>
+                  <Text style={styles.itemName}>
+                    {item.name}
+                  </Text>
+
+                  <Text style={styles.itemPrice}>
+                    ₹{item.unitPrice} ×{" "}
+                    {item.quantity}
+                  </Text>
+                </View>
+
+                <Text style={styles.itemTotal}>
+                  ₹
+                  {item.unitPrice *
+                    item.quantity}
                 </Text>
               </View>
 
-              <View
-                style={
-                  styles.itemInfo
-                }
-              >
-                <Text
-                  style={
-                    styles.itemName
-                  }
-                >
-                  {item.name}
-                </Text>
+              {/* CUSTOMIZATIONS */}
 
-                <Text
-                  style={
-                    styles.itemPrice
-                  }
-                >
-                  ₹{item.unitPrice} ×{" "}
-                  {item.quantity}
-                </Text>
-              </View>
+              {Array.isArray(
+                item.customizations
+              ) &&
+                item.customizations.length >
+                  0 && (
+                  <View
+                    style={
+                      styles.optionsContainer
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.optionsTitle
+                      }
+                    >
+                      🎨 Customizations
+                    </Text>
 
-              <Text
-                style={
-                  styles.itemTotal
-                }
-              >
-                ₹
-                {item.unitPrice *
-                  item.quantity}
-              </Text>
+                    {item.customizations.map(
+                      (option, optionIndex) => {
+                        const name =
+                          getOptionName(
+                            option
+                          );
+
+                        const price =
+                          getOptionPrice(
+                            option
+                          );
+
+                        if (!name) {
+                          return null;
+                        }
+
+                        return (
+                          <View
+                            key={`custom-${optionIndex}`}
+                            style={
+                              styles.optionRow
+                            }
+                          >
+                            <Text
+                              style={
+                                styles.optionName
+                              }
+                            >
+                              • {name}
+                            </Text>
+
+                            {price > 0 && (
+                              <Text
+                                style={
+                                  styles.optionPrice
+                                }
+                              >
+                                +₹{price}
+                              </Text>
+                            )}
+                          </View>
+                        );
+                      }
+                    )}
+                  </View>
+                )}
+
+              {/* ADD ONS */}
+
+              {Array.isArray(
+                item.addOns
+              ) &&
+                item.addOns.length > 0 && (
+                  <View
+                    style={
+                      styles.optionsContainer
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.optionsTitle
+                      }
+                    >
+                      ➕ Add-ons
+                    </Text>
+
+                    {item.addOns.map(
+                      (option, optionIndex) => {
+                        const name =
+                          getOptionName(
+                            option
+                          );
+
+                        const price =
+                          getOptionPrice(
+                            option
+                          );
+
+                        if (!name) {
+                          return null;
+                        }
+
+                        return (
+                          <View
+                            key={`addon-${optionIndex}`}
+                            style={
+                              styles.optionRow
+                            }
+                          >
+                            <Text
+                              style={
+                                styles.optionName
+                              }
+                            >
+                              • {name}
+                            </Text>
+
+                            {price > 0 && (
+                              <Text
+                                style={
+                                  styles.optionPrice
+                                }
+                              >
+                                +₹{price}
+                              </Text>
+                            )}
+                          </View>
+                        );
+                      }
+                    )}
+                  </View>
+                )}
             </View>
           )
         )}
       </View>
 
-      {/* ==============================
-          DELIVERY DETAILS
-      ============================== */}
+      {/* DELIVERY DETAILS */}
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>
@@ -723,62 +786,42 @@ export default function OrderDetailsScreen() {
 
         {order.customer.landmark ? (
           <>
-            <Text
-              style={styles.infoLabel}
-            >
+            <Text style={styles.infoLabel}>
               Landmark
             </Text>
 
-            <Text
-              style={styles.infoValue}
-            >
-              {
-                order.customer
-                  .landmark
-              }
+            <Text style={styles.infoValue}>
+              {order.customer.landmark}
             </Text>
           </>
         ) : null}
       </View>
 
-      {/* ==============================
-          PAYMENT
-      ============================== */}
+      {/* PAYMENT */}
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>
           Payment
         </Text>
 
-        <View
-          style={styles.paymentRow}
-        >
-          <Text
-            style={styles.paymentLabel}
-          >
+        <View style={styles.paymentRow}>
+          <Text style={styles.paymentLabel}>
             Method
           </Text>
 
-          <Text
-            style={styles.paymentValue}
-          >
+          <Text style={styles.paymentValue}>
             {order.paymentMethod}
           </Text>
         </View>
 
-        <View
-          style={styles.paymentRow}
-        >
-          <Text
-            style={styles.paymentLabel}
-          >
+        <View style={styles.paymentRow}>
+          <Text style={styles.paymentLabel}>
             Payment Status
           </Text>
 
           <Text
             style={[
               styles.paymentValue,
-
               order.paymentStatus ===
                 "PAID"
                 ? styles.paid
@@ -790,91 +833,92 @@ export default function OrderDetailsScreen() {
         </View>
       </View>
 
-      {/* ==============================
-          BILL
-      ============================== */}
+      {/* BILL */}
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>
           Bill Details
         </Text>
 
-        <View
-          style={styles.billRow}
-        >
-          <Text
-            style={styles.billLabel}
-          >
+        <View style={styles.billRow}>
+          <Text style={styles.billLabel}>
             Subtotal
           </Text>
 
-          <Text
-            style={styles.billValue}
-          >
+          <Text style={styles.billValue}>
             ₹{order.subtotal}
           </Text>
         </View>
 
-        <View
-          style={styles.billRow}
-        >
-          <Text
-            style={styles.billLabel}
-          >
+        <View style={styles.billRow}>
+          <Text style={styles.billLabel}>
             Delivery Charge
           </Text>
 
-          <Text
-            style={styles.billValue}
-          >
-            {order.deliveryCharge ===
-            0
+          <Text style={styles.billValue}>
+            {order.deliveryCharge === 0
               ? "FREE"
               : `₹${order.deliveryCharge}`}
           </Text>
         </View>
 
-        <View
-          style={styles.divider}
-        />
+        <View style={styles.divider} />
 
-        <View
-          style={styles.billRow}
-        >
-          <Text
-            style={styles.grandLabel}
-          >
+        <View style={styles.billRow}>
+          <Text style={styles.grandLabel}>
             Grand Total
           </Text>
 
-          <Text
-            style={styles.grandTotal}
-          >
+          <Text style={styles.grandTotal}>
             ₹{order.grandTotal}
           </Text>
         </View>
       </View>
 
       {/* ==============================
-          MANUAL REFRESH
+          HELP & SUPPORT
       ============================== */}
 
       <TouchableOpacity
-        style={
-          styles.refreshButton
+        style={styles.supportButton}
+        activeOpacity={0.8}
+        onPress={() =>
+          router.push("/help-support")
         }
+      >
+        <View style={styles.supportIconBox}>
+          <Text style={styles.supportIcon}>
+            🎧
+          </Text>
+        </View>
+
+        <View style={styles.supportTextContainer}>
+          <Text style={styles.supportTitle}>
+            Need Help?
+          </Text>
+
+          <Text style={styles.supportSubtitle}>
+            Contact Support about this order
+          </Text>
+        </View>
+
+        <Text style={styles.supportArrow}>
+          ›
+        </Text>
+      </TouchableOpacity>
+
+      {/* REFRESH */}
+
+      <TouchableOpacity
+        style={styles.refreshButton}
         onPress={fetchOrder}
       >
-        <Text
-          style={styles.refreshText}
-        >
+        <Text style={styles.refreshText}>
           🔄 Refresh Order Status
         </Text>
       </TouchableOpacity>
 
-      <View
-        style={{ height: 30 }}
-      />
+      <View style={{ height: 30 }} />
     </ScrollView>
   );
 }
@@ -1110,12 +1154,20 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
+  // ==============================
+  // ITEMS
+  // ==============================
+
+  itemContainer: {
+    paddingBottom: 13,
+    marginBottom: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+
   itemRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
   },
 
   quantityBox: {
@@ -1155,6 +1207,45 @@ const styles = StyleSheet.create({
     color: "#222",
   },
 
+  optionsContainer: {
+    marginLeft: 54,
+    marginTop: 9,
+    paddingLeft: 10,
+    borderLeftWidth: 2,
+    borderLeftColor: "#ffe0c2",
+  },
+
+  optionsTitle: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#555",
+    marginBottom: 5,
+  },
+
+  optionRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 4,
+  },
+
+  optionName: {
+    flex: 1,
+    fontSize: 12,
+    color: "#666",
+  },
+
+  optionPrice: {
+    fontSize: 12,
+    color: "#e65100",
+    fontWeight: "700",
+    marginLeft: 8,
+  },
+
+  // ==============================
+  // DELIVERY
+  // ==============================
+
   infoLabel: {
     fontSize: 12,
     color: "#999",
@@ -1167,6 +1258,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 3,
   },
+
+  // ==============================
+  // PAYMENT
+  // ==============================
 
   paymentRow: {
     flexDirection: "row",
@@ -1192,6 +1287,10 @@ const styles = StyleSheet.create({
   pending: {
     color: "#e58a00",
   },
+
+  // ==============================
+  // BILL
+  // ==============================
 
   billRow: {
     flexDirection: "row",
@@ -1227,6 +1326,62 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: "#ff6b00",
   },
+
+  // ==============================
+  // SUPPORT
+  // ==============================
+
+  supportButton: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 14,
+    borderRadius: 18,
+    backgroundColor: "#fff3e8",
+    borderWidth: 1,
+    borderColor: "#ffe0c2",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  supportIconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  supportIcon: {
+    fontSize: 24,
+  },
+
+  supportTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+
+  supportTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#222",
+  },
+
+  supportSubtitle: {
+    fontSize: 12,
+    color: "#777",
+    marginTop: 3,
+  },
+
+  supportArrow: {
+    fontSize: 28,
+    color: "#e65100",
+    marginLeft: 8,
+  },
+
+  // ==============================
+  // REFRESH
+  // ==============================
 
   refreshButton: {
     marginHorizontal: 16,

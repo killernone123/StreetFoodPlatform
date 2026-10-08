@@ -4,7 +4,13 @@ const crypto = require("crypto");
 const mongoose = require("mongoose");
 
 const userAuth = require("../middleware/userAuth");
+
 const Order = require("../models/Order");
+const PushToken = require("../models/PushToken");
+
+const {
+    sendPushNotification
+} = require("../utils/sendPushNotification");
 
 const router = express.Router();
 
@@ -14,8 +20,13 @@ const router = express.Router();
 // =====================================================
 
 const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET
+
+    key_id:
+        process.env.RAZORPAY_KEY_ID,
+
+    key_secret:
+        process.env.RAZORPAY_KEY_SECRET
+
 });
 
 
@@ -38,10 +49,16 @@ router.post(
             // ---------------------------------------------
 
             if (!orderId) {
+
                 return res.status(400).json({
+
                     success: false,
-                    message: "Order ID is required"
+
+                    message:
+                        "Order ID is required"
+
                 });
+
             }
 
 
@@ -50,10 +67,16 @@ router.post(
                     orderId
                 )
             ) {
+
                 return res.status(400).json({
+
                     success: false,
-                    message: "Invalid order ID"
+
+                    message:
+                        "Invalid order ID"
+
                 });
+
             }
 
 
@@ -63,16 +86,27 @@ router.post(
 
             const order =
                 await Order.findOne({
-                    _id: orderId,
-                    userId: req.user.id
+
+                    _id:
+                        orderId,
+
+                    userId:
+                        req.user.id
+
                 });
 
 
             if (!order) {
+
                 return res.status(404).json({
+
                     success: false,
-                    message: "Order not found"
+
+                    message:
+                        "Order not found"
+
                 });
+
             }
 
 
@@ -83,11 +117,16 @@ router.post(
             if (
                 order.paymentMethod !== "ONLINE"
             ) {
+
                 return res.status(400).json({
+
                     success: false,
+
                     message:
                         "This order is not an online payment order"
+
                 });
+
             }
 
 
@@ -98,10 +137,16 @@ router.post(
             if (
                 order.paymentStatus === "PAID"
             ) {
+
                 return res.status(400).json({
+
                     success: false,
-                    message: "Order is already paid"
+
+                    message:
+                        "Order is already paid"
+
                 });
+
             }
 
 
@@ -128,12 +173,15 @@ router.post(
                         order.orderNumber,
 
                     notes: {
+
                         orderId:
                             order._id.toString(),
 
                         orderNumber:
                             order.orderNumber
+
                     }
+
                 });
 
 
@@ -173,6 +221,7 @@ router.post(
 
                 orderId:
                     order._id
+
             });
 
 
@@ -190,8 +239,11 @@ router.post(
 
                 message:
                     "Failed to create payment order"
+
             });
+
         }
+
     }
 );
 
@@ -208,10 +260,15 @@ router.post(
         try {
 
             const {
+
                 orderId,
+
                 razorpay_order_id,
+
                 razorpay_payment_id,
+
                 razorpay_signature
+
             } = req.body;
 
 
@@ -220,10 +277,15 @@ router.post(
             // ---------------------------------------------
 
             if (
+
                 !orderId ||
+
                 !razorpay_order_id ||
+
                 !razorpay_payment_id ||
+
                 !razorpay_signature
+
             ) {
 
                 return res.status(400).json({
@@ -232,7 +294,9 @@ router.post(
 
                     message:
                         "Payment verification data missing"
+
                 });
+
             }
 
 
@@ -252,7 +316,9 @@ router.post(
 
                     message:
                         "Invalid order ID"
+
                 });
+
             }
 
 
@@ -268,6 +334,7 @@ router.post(
 
                     userId:
                         req.user.id
+
                 });
 
 
@@ -279,7 +346,9 @@ router.post(
 
                     message:
                         "Order not found"
+
                 });
+
             }
 
 
@@ -297,7 +366,9 @@ router.post(
 
                     message:
                         "This order is not an online payment order"
+
                 });
+
             }
 
 
@@ -316,7 +387,9 @@ router.post(
 
                     message:
                         "Razorpay order ID mismatch"
+
                 });
+
             }
 
 
@@ -384,7 +457,9 @@ router.post(
 
                     message:
                         "Invalid payment signature"
+
                 });
+
             }
 
 
@@ -404,7 +479,9 @@ router.post(
                         "Payment already verified",
 
                     order
+
                 });
+
             }
 
 
@@ -427,9 +504,9 @@ router.post(
             await order.save();
 
 
-            // ---------------------------------------------
-            // SEND PAID ORDER TO ADMIN
-            // ---------------------------------------------
+            // =====================================================
+            // SEND PAID ORDER TO ADMIN SOCKET
+            // =====================================================
 
             const io =
                 req.app.get("io");
@@ -444,7 +521,7 @@ router.post(
 
 
                 console.log(
-                    "🔔 NEW PAID ORDER SENT TO ADMIN"
+                    "🔔 NEW PAID ORDER SENT TO ADMIN SOCKET"
                 );
 
 
@@ -468,12 +545,125 @@ router.post(
                         .get("admin_room")
                         ?.size || 0
                 );
+
             }
 
 
-            // ---------------------------------------------
+            // =====================================================
+            // SEND PUSH NOTIFICATION TO ADMIN
+            // =====================================================
+
+            try {
+
+                const adminPushTokens =
+                    await PushToken.find({
+
+                        userType:
+                            "admin",
+
+                        isActive:
+                            true,
+
+                        token: {
+
+                            $exists:
+                                true,
+
+                            $ne:
+                                ""
+
+                        }
+
+                    });
+
+
+                console.log(
+                    "📱 ACTIVE ADMIN PUSH TOKENS:",
+                    adminPushTokens.length
+                );
+
+
+                if (
+                    adminPushTokens.length > 0
+                ) {
+
+                    const notificationPromises =
+                        adminPushTokens.map(
+                            async (pushToken) => {
+
+                                return sendPushNotification({
+
+                                    token:
+                                        pushToken.token,
+
+                                    title:
+                                        "💳 Online Order Paid",
+
+                                    body:
+                                        `${order.orderNumber} • ₹${order.grandTotal} • Payment Successful`,
+
+                                    data: {
+
+                                        type:
+                                            "NEW_PAID_ORDER",
+
+                                        orderId:
+                                            order._id.toString(),
+
+                                        orderNumber:
+                                            order.orderNumber,
+
+                                        paymentMethod:
+                                            order.paymentMethod,
+
+                                        paymentStatus:
+                                            order.paymentStatus,
+
+                                        grandTotal:
+                                            order.grandTotal
+
+                                    }
+
+                                });
+
+                            }
+                        );
+
+
+                    await Promise.all(
+                        notificationPromises
+                    );
+
+
+                    console.log(
+                        "✅ ADMIN PUSH NOTIFICATION SENT:",
+                        order.orderNumber
+                    );
+
+                } else {
+
+                    console.log(
+                        "⚠️ No active admin push tokens found"
+                    );
+
+                }
+
+            } catch (pushError) {
+
+                console.error(
+                    "❌ ADMIN ONLINE ORDER PUSH ERROR:",
+                    pushError
+                );
+
+                // Push notification fail hone par
+                // payment/order ko fail nahi karenge.
+
+            }
+
+
+            // =====================================================
             // SUCCESS RESPONSE
-            // ---------------------------------------------
+            // =====================================================
 
             return res.status(200).json({
 
@@ -483,6 +673,7 @@ router.post(
                     "Payment verified successfully",
 
                 order
+
             });
 
 
@@ -500,8 +691,11 @@ router.post(
 
                 message:
                     "Payment verification failed"
+
             });
+
         }
+
     }
 );
 

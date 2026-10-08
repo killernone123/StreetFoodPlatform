@@ -1,6 +1,11 @@
 const express = require("express");
 const mongoose = require("mongoose");
 
+const PushToken = require("../models/PushToken");
+const {
+    sendPushNotification
+} = require("../utils/sendPushNotification");
+
 const Order = require("../models/Order");
 const Food = require("../models/Food");
 
@@ -15,6 +20,7 @@ const router = express.Router();
 // =====================================
 
 router.post("/", userAuth, async (req, res) => {
+
     try {
 
         const {
@@ -29,10 +35,12 @@ router.post("/", userAuth, async (req, res) => {
         // =====================================
 
         if (!customer) {
+
             return res.status(400).json({
                 success: false,
                 message: "Customer details are required"
             });
+
         }
 
 
@@ -41,10 +49,13 @@ router.post("/", userAuth, async (req, res) => {
             !customer.phone ||
             !customer.address
         ) {
+
             return res.status(400).json({
                 success: false,
-                message: "Name, phone and address are required"
+                message:
+                    "Name, phone and address are required"
             });
+
         }
 
 
@@ -53,10 +64,12 @@ router.post("/", userAuth, async (req, res) => {
             !Array.isArray(items) ||
             items.length === 0
         ) {
+
             return res.status(400).json({
                 success: false,
                 message: "Cart is empty"
             });
+
         }
 
 
@@ -67,10 +80,12 @@ router.post("/", userAuth, async (req, res) => {
         if (
             !["COD", "ONLINE"].includes(paymentMethod)
         ) {
+
             return res.status(400).json({
                 success: false,
                 message: "Invalid payment method"
             });
+
         }
 
 
@@ -86,11 +101,14 @@ router.post("/", userAuth, async (req, res) => {
                     item.foodId
                 )
             ) {
+
                 return res.status(400).json({
                     success: false,
                     message: "Invalid food ID"
                 });
+
             }
+
         }
 
 
@@ -137,10 +155,12 @@ router.post("/", userAuth, async (req, res) => {
 
 
             if (!food) {
+
                 return res.status(404).json({
                     success: false,
                     message: "Food item not found"
                 });
+
             }
 
 
@@ -149,11 +169,13 @@ router.post("/", userAuth, async (req, res) => {
             // =================================
 
             if (!food.isAvailable) {
+
                 return res.status(400).json({
                     success: false,
                     message:
                         `${food.name} is currently unavailable`
                 });
+
             }
 
 
@@ -169,10 +191,12 @@ router.post("/", userAuth, async (req, res) => {
                 !Number.isInteger(quantity) ||
                 quantity < 1
             ) {
+
                 return res.status(400).json({
                     success: false,
                     message: "Invalid quantity"
                 });
+
             }
 
 
@@ -211,11 +235,13 @@ router.post("/", userAuth, async (req, res) => {
 
 
                 if (!group) {
+
                     return res.status(400).json({
                         success: false,
                         message:
                             `Invalid customization: ${groupName}`
                     });
+
                 }
 
 
@@ -236,11 +262,13 @@ router.post("/", userAuth, async (req, res) => {
 
 
                 if (!databaseOption) {
+
                     return res.status(400).json({
                         success: false,
                         message:
                             `Invalid option: ${selectedOptionName}`
                     });
+
                 }
 
 
@@ -259,12 +287,15 @@ router.post("/", userAuth, async (req, res) => {
 
 
                 validatedCustomizations.push({
+
                     name:
                         databaseOption.name,
 
                     price:
                         optionPrice
+
                 });
+
             }
 
 
@@ -281,10 +312,12 @@ router.post("/", userAuth, async (req, res) => {
 
 
             if (!Array.isArray(selectedAddOns)) {
+
                 return res.status(400).json({
                     success: false,
                     message: "Invalid add-ons"
                 });
+
             }
 
 
@@ -301,11 +334,13 @@ router.post("/", userAuth, async (req, res) => {
 
 
                 if (!databaseAddOn) {
+
                     return res.status(400).json({
                         success: false,
                         message:
                             `Invalid add-on: ${selectedAddOn.name}`
                     });
+
                 }
 
 
@@ -320,12 +355,15 @@ router.post("/", userAuth, async (req, res) => {
 
 
                 validatedAddOns.push({
+
                     name:
                         databaseAddOn.name,
 
                     price:
                         currentAddOnPrice
+
                 });
+
             }
 
 
@@ -367,7 +405,9 @@ router.post("/", userAuth, async (req, res) => {
 
                 addOns:
                     validatedAddOns
+
             });
+
         }
 
 
@@ -432,11 +472,12 @@ router.post("/", userAuth, async (req, res) => {
                     "PENDING",
 
                 razorpayOrderId: ""
+
             });
 
 
         // =====================================
-        // REAL-TIME ADMIN NOTIFICATION
+        // REAL-TIME ADMIN SOCKET
         // =====================================
 
         const io =
@@ -448,27 +489,137 @@ router.post("/", userAuth, async (req, res) => {
         // =====================================
 
         if (
-            io &&
             paymentMethod === "COD"
         ) {
 
-            io.to("admin_room").emit(
-                "newOrder",
-                order
-            );
+            // =================================
+            // SOCKET NOTIFICATION
+            // =================================
+
+            if (io) {
+
+                io.to("admin_room").emit(
+                    "newOrder",
+                    order
+                );
 
 
-            console.log(
-                "🔔 COD order sent to admin:",
-                order.orderNumber
-            );
+                console.log(
+                    "🔔 COD order sent to admin socket:",
+                    order.orderNumber
+                );
+
+            }
+
+
+            // =================================
+            // PUSH NOTIFICATION TO ADMIN
+            // =================================
+
+            try {
+
+                const adminPushTokens =
+                    await PushToken.find({
+
+                        userType: "admin",
+
+                        isActive: true,
+
+                        token: {
+                            $exists: true,
+                            $ne: ""
+                        }
+
+                    });
+
+
+                console.log(
+                    "📱 ACTIVE ADMIN PUSH TOKENS:",
+                    adminPushTokens.length
+                );
+
+
+                if (
+                    adminPushTokens.length > 0
+                ) {
+
+                    const notificationPromises =
+                        adminPushTokens.map(
+                            async (pushToken) => {
+
+                                return sendPushNotification({
+
+                                    token:
+                                        pushToken.token,
+
+                                    title:
+                                        "🔔 New Order Received",
+
+                                    body:
+                                        `${order.orderNumber} • ₹${order.grandTotal} • COD`,
+
+                                    data: {
+
+                                        type:
+                                            "NEW_ORDER",
+
+                                        orderId:
+                                            order._id.toString(),
+
+                                        orderNumber:
+                                            order.orderNumber,
+
+                                        paymentMethod:
+                                            order.paymentMethod,
+
+                                        grandTotal:
+                                            order.grandTotal
+
+                                    }
+
+                                });
+
+                            }
+                        );
+
+
+                    await Promise.all(
+                        notificationPromises
+                    );
+
+
+                    console.log(
+                        "✅ ADMIN PUSH NOTIFICATION SENT:",
+                        order.orderNumber
+                    );
+
+                } else {
+
+                    console.log(
+                        "⚠️ No active admin push tokens found"
+                    );
+
+                }
+
+            } catch (pushError) {
+
+                console.error(
+                    "❌ ADMIN PUSH NOTIFICATION ERROR:",
+                    pushError
+                );
+
+                // Push notification fail hone par
+                // order fail nahi hoga.
+            }
+
         }
 
 
         // =====================================
         // ONLINE ORDER
         // =====================================
-        // ONLINE payment ke case me:
+        //
+        // Online payment ke case me:
         //
         // 1. Order database me create hoga
         // 2. Payment status PENDING rahega
@@ -477,10 +628,12 @@ router.post("/", userAuth, async (req, res) => {
         // 4. Razorpay payment hoga
         // 5. /payments/verify payment verify karega
         // 6. Payment successful hone ke baad
-        //    admin ko newOrder event milega
+        //    admin ko notification bhejna hai.
         //
-        // Isliye yahan Razorpay order create
-        // NAHI karna hai.
+        // Yahan notification NAHI bhej rahe.
+        // Isse failed/cancelled payment par
+        // admin ko fake new-order notification
+        // nahi milegi.
 
 
         // =====================================
@@ -499,6 +652,7 @@ router.post("/", userAuth, async (req, res) => {
             order,
 
             payment: null
+
         });
 
 
@@ -519,8 +673,11 @@ router.post("/", userAuth, async (req, res) => {
 
             error:
                 error.message
+
         });
+
     }
+
 });
 
 
@@ -537,10 +694,14 @@ router.get(
 
             const orders =
                 await Order.find({
+
                     userId:
                         req.user.id
+
                 }).sort({
+
                     createdAt: -1
+
                 });
 
 
@@ -552,6 +713,7 @@ router.get(
                     orders.length,
 
                 orders
+
             });
 
 
@@ -569,8 +731,11 @@ router.get(
 
                 message:
                     "Failed to fetch your orders"
+
             });
+
         }
+
     }
 );
 
@@ -602,7 +767,9 @@ router.get(
 
                     message:
                         "Invalid order ID"
+
                 });
+
             }
 
 
@@ -618,6 +785,7 @@ router.get(
 
                     userId:
                         req.user.id
+
                 });
 
 
@@ -629,7 +797,9 @@ router.get(
 
                     message:
                         "Order not found"
+
                 });
+
             }
 
 
@@ -638,6 +808,7 @@ router.get(
                 success: true,
 
                 order
+
             });
 
 
@@ -655,8 +826,11 @@ router.get(
 
                 message:
                     "Failed to fetch order details"
+
             });
+
         }
+
     }
 );
 
@@ -675,7 +849,9 @@ router.get(
             const orders =
                 await Order.find()
                     .sort({
+
                         createdAt: -1
+
                     });
 
 
@@ -687,6 +863,7 @@ router.get(
                     orders.length,
 
                 orders
+
             });
 
 
@@ -704,8 +881,11 @@ router.get(
 
                 message:
                     "Failed to fetch orders"
+
             });
+
         }
+
     }
 );
 
@@ -729,13 +909,21 @@ router.patch(
             // =================================
 
             const allowedStatuses = [
+
                 "PLACED",
+
                 "CONFIRMED",
+
                 "PREPARING",
+
                 "READY",
+
                 "OUT_FOR_DELIVERY",
+
                 "DELIVERED",
+
                 "CANCELLED"
+
             ];
 
 
@@ -748,9 +936,14 @@ router.patch(
             ) {
 
                 return res.status(400).json({
+
                     success: false,
-                    message: "Invalid order status"
+
+                    message:
+                        "Invalid order status"
+
                 });
+
             }
 
 
@@ -765,9 +958,14 @@ router.patch(
             ) {
 
                 return res.status(400).json({
+
                     success: false,
-                    message: "Invalid order ID"
+
+                    message:
+                        "Invalid order ID"
+
                 });
+
             }
 
 
@@ -777,23 +975,34 @@ router.patch(
 
             const order =
                 await Order.findByIdAndUpdate(
+
                     req.params.id,
+
                     {
-                        orderStatus: status
+                        orderStatus:
+                            status
                     },
+
                     {
                         new: true,
+
                         runValidators: true
                     }
+
                 );
 
 
             if (!order) {
 
                 return res.status(404).json({
+
                     success: false,
-                    message: "Order not found"
+
+                    message:
+                        "Order not found"
+
                 });
+
             }
 
 
@@ -812,8 +1021,11 @@ router.patch(
 
 
                 io.to(roomName).emit(
+
                     "orderStatusUpdated",
+
                     {
+
                         orderId:
                             order._id.toString(),
 
@@ -825,7 +1037,9 @@ router.patch(
 
                         paymentStatus:
                             order.paymentStatus
+
                     }
+
                 );
 
 
@@ -856,6 +1070,7 @@ router.patch(
                         .get(roomName)
                         ?.size || 0
                 );
+
             }
 
 
@@ -871,6 +1086,7 @@ router.patch(
                     "Order status updated",
 
                 order
+
             });
 
 
@@ -888,8 +1104,11 @@ router.patch(
 
                 message:
                     "Failed to update order status"
+
             });
+
         }
+
     }
 );
 

@@ -168,11 +168,9 @@ const Admin = () => {
             );
 
             // JOIN ADMIN ROOM
-            socket.emit("joinAdminRoom");
-
-            console.log(
-                "👨‍💼 joinAdminRoom event sent"
-            );
+            socket.emit("joinAdminRoom", (response) => {
+                console.log("🏠 ADMIN ROOM JOIN ACK:", response);
+            });
 
         });
 
