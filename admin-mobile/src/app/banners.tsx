@@ -493,6 +493,100 @@ export default function BannersScreen() {
       setSaving(false);
     }
   };
+  // =========================================
+// SEND CUSTOMER NOTIFICATION
+// =========================================
+
+const sendBannerNotification = (
+  banner: Banner
+) => {
+  Alert.alert(
+    "Send Notification 📢",
+    `"${banner.title}" ka notification sabhi customers ko bhejna hai?`,
+    [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Send",
+        onPress: async () => {
+          try {
+            const token =
+              await getToken();
+
+            console.log(
+              "📢 SENDING BANNER NOTIFICATION:",
+              banner._id
+            );
+
+            const response =
+              await fetch(
+                `${API_URL}/banners/${banner._id}/send-notification`,
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization:
+                      `Bearer ${token}`,
+                    "Content-Type":
+                      "application/json",
+                  },
+                }
+              );
+
+            const data =
+              await response.json();
+
+            console.log(
+              "📢 BANNER NOTIFICATION RESPONSE:",
+              data
+            );
+
+            if (response.status === 401) {
+              await AsyncStorage.removeItem(
+                "adminToken"
+              );
+
+              await AsyncStorage.removeItem(
+                "adminData"
+              );
+
+              router.replace("/");
+              return;
+            }
+
+            if (!response.ok) {
+              throw new Error(
+                data?.message ||
+                  "Notification send nahi ho paayi."
+              );
+            }
+
+            Alert.alert(
+              "Notification Sent ✅",
+              `Customer notification successfully send ho gayi.\n\nSent: ${
+                data?.sent ?? 0
+              } / ${
+                data?.total ?? 0
+              }`
+            );
+          } catch (error: any) {
+            console.log(
+              "❌ SEND BANNER NOTIFICATION ERROR:",
+              error
+            );
+
+            Alert.alert(
+              "Notification Failed",
+              error?.message ||
+                "Customer notification send nahi ho paayi."
+            );
+          }
+        },
+      },
+    ]
+  );
+};
 
   // =========================================
   // DELETE
@@ -1079,6 +1173,22 @@ export default function BannersScreen() {
                             : "▶️ Activate"}
                         </Text>
                       </TouchableOpacity>
+                      <TouchableOpacity
+  style={styles.notificationButton}
+  onPress={() =>
+    sendBannerNotification(
+      banner
+    )
+  }
+>
+  <Text
+    style={
+      styles.notificationButtonText
+    }
+  >
+    📢 Send
+  </Text>
+</TouchableOpacity>
 
                       <TouchableOpacity
                         style={
@@ -1836,6 +1946,22 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: "#334155",
   },
+  notificationButton: {
+  flex: 1,
+  minHeight: 42,
+  borderRadius: 12,
+  backgroundColor: "#eff6ff",
+  borderWidth: 1,
+  borderColor: "#bfdbfe",
+  justifyContent: "center",
+  alignItems: "center",
+},
+
+notificationButtonText: {
+  fontSize: 11,
+  fontWeight: "900",
+  color: "#2563eb",
+},
 
   deleteButton: {
     width: 46,

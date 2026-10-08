@@ -2,6 +2,10 @@ const express = require("express");
 
 const Banner = require("../models/Banner");
 const adminAuth = require("../middleware/adminAuth");
+const PushToken = require("../models/PushToken");
+const {
+    sendPushNotification,
+} = require("../utils/sendPushNotification");
 
 const router = express.Router();
 
@@ -284,6 +288,77 @@ router.delete("/:id", adminAuth, async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Failed to delete banner",
+        });
+    }
+});
+// =====================================================
+// SEND BANNER NOTIFICATION TO ALL CUSTOMERS
+// =====================================================
+
+router.post("/:id/send-notification", adminAuth, async (req, res) => {
+    try {
+        const banner = await Banner.findById(req.params.id);
+
+        if (!banner) {
+            return res.status(404).json({
+                success: false,
+                message: "Banner not found",
+            });
+        }
+
+        const customerTokens = await PushToken.find({
+            userType: "customer",
+            isActive: true,
+        });
+
+        if (customerTokens.length === 0) {
+            return res.status(200).json({
+                success: true,
+                message: "No active customer devices found",
+                sent: 0,
+            });
+        }
+
+        let sent = 0;
+
+        for (const pushToken of customerTokens) {
+            const result = await sendPushNotification({
+                token: pushToken.token,
+                title: banner.title || "🎉 New Offer",
+                body:
+                    banner.message ||
+                    "Street Food app par naya offer available hai!",
+                data: {
+                    type: "BANNER",
+                    bannerId: banner._id.toString(),
+                    bannerType: banner.type,
+                },
+            });
+
+            if (result) {
+                sent++;
+            }
+        }
+
+        console.log(
+            `📢 BANNER NOTIFICATION SENT: ${sent}/${customerTokens.length}`
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Banner notification sent successfully",
+            sent,
+            total: customerTokens.length,
+        });
+    } catch (error) {
+        console.error(
+            "❌ BANNER NOTIFICATION ERROR:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to send banner notification",
         });
     }
 });
